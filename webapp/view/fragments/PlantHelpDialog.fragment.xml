@@ -1,0 +1,43 @@
+<core:FragmentDefinition
+    xmlns:m="sap.m"
+    xmlns:core="sap.ui.core"
+    xmlns:table="sap.ui.table"
+    xmlns="sap.ui.comp.valuehelpdialog"
+    xmlns:fb="sap.ui.comp.filterbar"
+>
+    <ValueHelpDialog
+        title="{i18n>plantSelection}"
+        ok=".onValueHelpOkPress"
+        cancel=".onExitDialog"
+        key="Plant"
+        descriptionKey="Name"
+        supportMultiselect="false"
+    >
+        <filterBar>
+            <fb:FilterBar search="onFilterBarSearch">
+                <fb:filterGroupItems>
+                    <fb:FilterGroupItem
+                        groupName="__$INTERNAL$"
+                        name="Plant"
+                        label="{i18n>plant}"
+                        visibleInFilterBar="true"
+                    >
+                        <fb:control>
+                            <m:Input name="Plant" submit="onSubmitFilter"/>
+                        </fb:control>
+                    </fb:FilterGroupItem>
+                    <fb:FilterGroupItem
+                        groupName="__$INTERNAL$"
+                        name="Name"
+                        label="{i18n>name}"
+                        visibleInFilterBar="true"
+                    >
+                        <fb:control>
+                            <m:Input name="Name" submit="onSubmitFilter"/>
+                        </fb:control>
+                    </fb:FilterGroupItem>
+                </fb:filterGroupItems>
+            </fb:FilterBar>
+        </filterBar>
+    </ValueHelpDialog>
+</core:FragmentDefinition>

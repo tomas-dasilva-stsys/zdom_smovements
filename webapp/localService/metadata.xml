@@ -1,0 +1,498 @@
+<?xml version="1.0" encoding="utf-8"?>
+<edmx:Edmx Version="1.0" xmlns:edmx="http://schemas.microsoft.com/ado/2007/06/edmx" xmlns:m="http://schemas.microsoft.com/ado/2007/08/dataservices/metadata" xmlns:sap="http://www.sap.com/Protocols/SAPData">
+    <edmx:DataServices m:DataServiceVersion="2.0">
+        <Schema Namespace="ZDOM_SIPMECA_SRV_01" xml:lang="en" sap:schema-version="1" xmlns="http://schemas.microsoft.com/ado/2008/09/edm">
+            <EntityType Name="ZSipmeca" sap:content-version="1">
+                <Key>
+                    <PropertyRef Name="Mawerk"/>
+                    <PropertyRef Name="Serialnr"/>
+                </Key>
+                <Property Name="Mandt" Type="Edm.String" Nullable="false" MaxLength="3" sap:unicode="false" sap:label="Client" sap:creatable="false" sap:updatable="false" sap:sortable="false" sap:filterable="false"/>
+                <Property Name="Mawerk" Type="Edm.String" Nullable="false" MaxLength="4" sap:unicode="false" sap:label="Plant for material" sap:creatable="false" sap:updatable="false" sap:sortable="false" sap:filterable="false"/>
+                <Property Name="Serialnr" Type="Edm.String" Nullable="false" MaxLength="18" sap:unicode="false" sap:label="Serial number" sap:creatable="false" sap:updatable="false" sap:sortable="false" sap:filterable="false"/>
+                <Property Name="RmMawerktx" Type="Edm.String" Nullable="false" MaxLength="30" sap:unicode="false" sap:label="Material description" sap:creatable="false" sap:updatable="false" sap:sortable="false" sap:filterable="false"/>
+                <Property Name="Anzfehler" Type="Edm.Int32" Nullable="false" sap:unicode="false" sap:label="Number of defects" sap:creatable="false" sap:updatable="false" sap:sortable="false" sap:filterable="false"/>
+                <Property Name="Txtot" Type="Edm.String" Nullable="false" MaxLength="40" sap:unicode="false" sap:label="Defect location code" sap:creatable="false" sap:updatable="false" sap:sortable="false" sap:filterable="false"/>
+                <Property Name="Fecod" Type="Edm.String" Nullable="false" MaxLength="4" sap:unicode="false" sap:label="Defect code" sap:creatable="false" sap:updatable="false" sap:sortable="false" sap:filterable="false"/>
+                <Property Name="Refnum" Type="Edm.String" Nullable="false" MaxLength="20" sap:unicode="false" sap:label="External ref. nº" sap:creatable="false" sap:updatable="false" sap:sortable="false" sap:filterable="false"/>
+                <Property Name="Deviceid" Type="Edm.String" Nullable="false" MaxLength="40" sap:unicode="false" sap:label="Device data" sap:creatable="false" sap:updatable="false" sap:sortable="false" sap:filterable="false"/>
+                <Property Name="Proddat" Type="Edm.DateTime" Nullable="false" Precision="7" sap:unicode="false" sap:label="Production date" sap:creatable="false" sap:updatable="false" sap:sortable="false" sap:filterable="false"/>
+                <Property Name="Headktxt" Type="Edm.String" Nullable="false" MaxLength="40" sap:unicode="false" sap:label="Description subject" sap:creatable="false" sap:updatable="false" sap:sortable="false" sap:filterable="false"/>
+                <Property Name="Zseqnu" Type="Edm.String" Nullable="false" MaxLength="4" sap:unicode="false" sap:label="Sequence number" sap:creatable="false" sap:updatable="false" sap:sortable="false" sap:filterable="false"/>
+                <Property Name="Zissplt" Type="Edm.String" Nullable="false" MaxLength="8" sap:unicode="false" sap:label="Issuing plant" sap:creatable="false" sap:updatable="false" sap:sortable="false" sap:filterable="false"/>
+                <Property Name="Zissappl" Type="Edm.String" Nullable="false" MaxLength="8" sap:unicode="false" sap:label="Issuing application" sap:creatable="false" sap:updatable="false" sap:sortable="false" sap:filterable="false"/>
+                <Property Name="Zrecpla" Type="Edm.String" Nullable="false" MaxLength="8" sap:unicode="false" sap:label="Receiving plant" sap:creatable="false" sap:updatable="false" sap:sortable="false" sap:filterable="false"/>
+                <Property Name="Zrecapp" Type="Edm.String" Nullable="false" MaxLength="8" sap:unicode="false" sap:label="Recv. application" sap:creatable="false" sap:updatable="false" sap:sortable="false" sap:filterable="false"/>
+                <Property Name="Ztypmes1" Type="Edm.String" Nullable="false" MaxLength="10" sap:unicode="false" sap:label="Type of message" sap:creatable="false" sap:updatable="false" sap:sortable="false" sap:filterable="false"/>
+                <Property Name="Zmestim" Type="Edm.String" Nullable="false" MaxLength="14" sap:unicode="false" sap:label="Message timestamp" sap:creatable="false" sap:updatable="false" sap:sortable="false" sap:filterable="false"/>
+                <Property Name="Ztypmes2" Type="Edm.String" Nullable="false" MaxLength="1" sap:unicode="false" sap:label="Type of message" sap:creatable="false" sap:updatable="false" sap:sortable="false" sap:filterable="false"/>
+                <Property Name="Zpline" Type="Edm.String" Nullable="false" MaxLength="1" sap:unicode="false" sap:label="Production line nº" sap:creatable="false" sap:updatable="false" sap:sortable="false" sap:filterable="false"/>
+                <Property Name="Zasslc" Type="Edm.String" Nullable="false" MaxLength="2" sap:unicode="false" sap:label="Assembly line code" sap:creatable="false" sap:updatable="false" sap:sortable="false" sap:filterable="false"/>
+                <Property Name="Zissonm" Type="Edm.String" Nullable="false" MaxLength="5" sap:unicode="false" sap:label="issuing operation nº" sap:creatable="false" sap:updatable="false" sap:sortable="false" sap:filterable="false"/>
+                <Property Name="Zidsffep" Type="Edm.String" Nullable="false" MaxLength="4" sap:unicode="false" sap:label="ID SFF entry point" sap:creatable="false" sap:updatable="false" sap:sortable="false" sap:filterable="false"/>
+                <Property Name="Zgenp" Type="Edm.String" Nullable="false" MaxLength="5" sap:unicode="false" sap:label="Generic point" sap:creatable="false" sap:updatable="false" sap:sortable="false" sap:filterable="false"/>
+                <Property Name="Zsffpc" Type="Edm.String" Nullable="false" MaxLength="4" sap:unicode="false" sap:label="SFF point chron. nº" sap:creatable="false" sap:updatable="false" sap:sortable="false" sap:filterable="false"/>
+                <Property Name="Zpon" Type="Edm.String" Nullable="false" MaxLength="8" sap:unicode="false" sap:label="PO Number (OF)" sap:creatable="false" sap:updatable="false" sap:sortable="false" sap:filterable="false"/>
+                <Property Name="Zuon" Type="Edm.String" Nullable="false" MaxLength="4" sap:unicode="false" sap:label="Unit order number" sap:creatable="false" sap:updatable="false" sap:sortable="false" sap:filterable="false"/>
+                <Property Name="Zpowut" Type="Edm.String" Nullable="false" MaxLength="6" sap:unicode="false" sap:label="Powertrain unit type" sap:creatable="false" sap:updatable="false" sap:sortable="false" sap:filterable="false"/>
+                <Property Name="Zutal" Type="Edm.String" Nullable="false" MaxLength="1" sap:unicode="false" sap:label="Unit type approval" sap:creatable="false" sap:updatable="false" sap:sortable="false" sap:filterable="false"/>
+                <Property Name="Zpowui" Type="Edm.String" Nullable="false" MaxLength="6" sap:unicode="false" sap:label="Powertrain unit ind." sap:creatable="false" sap:updatable="false" sap:sortable="false" sap:filterable="false"/>
+                <Property Name="Zref" Type="Edm.String" Nullable="false" MaxLength="10" sap:unicode="false" sap:label="Reference" sap:creatable="false" sap:updatable="false" sap:sortable="false" sap:filterable="false"/>
+                <Property Name="Zmodin" Type="Edm.String" Nullable="false" MaxLength="3" sap:unicode="false" sap:label="Modification index" sap:creatable="false" sap:updatable="false" sap:sortable="false" sap:filterable="false"/>
+                <Property Name="Zplc" Type="Edm.String" Nullable="false" MaxLength="1" sap:unicode="false" sap:label="Plant Code" sap:creatable="false" sap:updatable="false" sap:sortable="false" sap:filterable="false"/>
+                <Property Name="Zsipsn" Type="Edm.String" Nullable="false" MaxLength="6" sap:unicode="false" sap:label="SIP serial Number" sap:creatable="false" sap:updatable="false" sap:sortable="false" sap:filterable="false"/>
+                <Property Name="Zssarsn" Type="Edm.String" Nullable="false" MaxLength="10" sap:unicode="false" sap:label="Ssar sequence nº" sap:creatable="false" sap:updatable="false" sap:sortable="false" sap:filterable="false"/>
+                <Property Name="Zgenqpu" Type="Edm.String" Nullable="false" MaxLength="1" sap:unicode="false" sap:label="General qual. pwr. u" sap:creatable="false" sap:updatable="false" sap:sortable="false" sap:filterable="false"/>
+                <Property Name="Ztabnu" Type="Edm.String" Nullable="false" MaxLength="4" sap:unicode="false" sap:label="Tabop no. Used" sap:creatable="false" sap:updatable="false" sap:sortable="false" sap:filterable="false"/>
+                <Property Name="Zbomnu" Type="Edm.String" Nullable="false" MaxLength="4" sap:unicode="false" sap:label="Bill of mats no used" sap:creatable="false" sap:updatable="false" sap:sortable="false" sap:filterable="false"/>
+                <Property Name="Zcustc" Type="Edm.String" Nullable="false" MaxLength="10" sap:unicode="false" sap:label="Customer code" sap:creatable="false" sap:updatable="false" sap:sortable="false" sap:filterable="false"/>
+                <Property Name="Znatpi" Type="Edm.String" Nullable="false" MaxLength="3" sap:unicode="false" sap:label="Nature proc. instr." sap:creatable="false" sap:updatable="false" sap:sortable="false" sap:filterable="false"/>
+                <Property Name="Zres" Type="Edm.String" Nullable="false" MaxLength="3" sap:unicode="false" sap:label="Reserve" sap:creatable="false" sap:updatable="false" sap:sortable="false" sap:filterable="false"/>
+                <Property Name="Zpalst" Type="Edm.String" Nullable="false" MaxLength="2" sap:unicode="false" sap:label="Palette status" sap:creatable="false" sap:updatable="false" sap:sortable="false" sap:filterable="false"/>
+                <Property Name="Znworku" Type="Edm.String" Nullable="false" MaxLength="4" sap:unicode="false" sap:label="No. Of the workstat." sap:creatable="false" sap:updatable="false" sap:sortable="false" sap:filterable="false"/>
+                <Property Name="Znrein" Type="Edm.String" Nullable="false" MaxLength="5" sap:unicode="false" sap:label="No. Of reinsertions" sap:creatable="false" sap:updatable="false" sap:sortable="false" sap:filterable="false"/>
+                <Property Name="Zcltu" Type="Edm.String" Nullable="false" MaxLength="2" sap:unicode="false" sap:label="Class type of unit" sap:creatable="false" sap:updatable="false" sap:sortable="false" sap:filterable="false"/>
+                <Property Name="Znumti1" Type="Edm.String" Nullable="false" MaxLength="2" sap:unicode="false" sap:label="Nº time sent to rep." sap:creatable="false" sap:updatable="false" sap:sortable="false" sap:filterable="false"/>
+                <Property Name="Znumti2" Type="Edm.String" Nullable="false" MaxLength="2" sap:unicode="false" sap:label="Nº time sent to test" sap:creatable="false" sap:updatable="false" sap:sortable="false" sap:filterable="false"/>
+                <Property Name="Ztecben" Type="Edm.String" Nullable="false" MaxLength="5" sap:unicode="false" sap:label="Test bench number" sap:creatable="false" sap:updatable="false" sap:sortable="false" sap:filterable="false"/>
+                <Property Name="Ztrmsm" Type="Edm.String" Nullable="false" MaxLength="10" sap:unicode="false" sap:label="STR message type" sap:creatable="false" sap:updatable="false" sap:sortable="false" sap:filterable="false"/>
+                <Property Name="Znumtr" Type="Edm.String" Nullable="false" MaxLength="3" sap:unicode="false" sap:label="Nº transition points" sap:creatable="false" sap:updatable="false" sap:sortable="false" sap:filterable="false"/>
+                <Property Name="Zidsff" Type="Edm.String" Nullable="false" MaxLength="4" sap:unicode="false" sap:label="ID SFF entry point" sap:creatable="false" sap:updatable="false" sap:sortable="false" sap:filterable="false"/>
+                <Property Name="Zstrid" Type="Edm.String" Nullable="false" MaxLength="4" sap:unicode="false" sap:label="STR entry point ID" sap:creatable="false" sap:updatable="false" sap:sortable="false" sap:filterable="false"/>
+                <Property Name="Zgenpnt" Type="Edm.String" Nullable="false" MaxLength="5" sap:unicode="false" sap:label="Generic point" sap:creatable="false" sap:updatable="false" sap:sortable="false" sap:filterable="false"/>
+                <Property Name="Zsff1" Type="Edm.String" Nullable="false" MaxLength="4" sap:unicode="false" sap:label="SFF point chronolog." sap:creatable="false" sap:updatable="false" sap:sortable="false" sap:filterable="false"/>
+                <Property Name="Zsff2" Type="Edm.String" Nullable="false" MaxLength="4" sap:unicode="false" sap:label="STR point chronolog." sap:creatable="false" sap:updatable="false" sap:sortable="false" sap:filterable="false"/>
+                <Property Name="Ztmstm" Type="Edm.String" Nullable="false" MaxLength="14" sap:unicode="false" sap:label="Timestamp" sap:creatable="false" sap:updatable="false" sap:sortable="false" sap:filterable="false"/>
+                <Property Name="Zaddi" Type="Edm.String" Nullable="false" MaxLength="300" sap:unicode="false" sap:label="Additonal info." sap:creatable="false" sap:updatable="false" sap:sortable="false" sap:filterable="false"/>
+                <Property Name="Zcomp" Type="Edm.String" Nullable="false" MaxLength="3" sap:unicode="false" sap:label="Nº signage component" sap:creatable="false" sap:updatable="false" sap:sortable="false" sap:filterable="false"/>
+                <Property Name="Znumassel" Type="Edm.String" Nullable="false" MaxLength="2" sap:unicode="false" sap:label="Nº associated elem." sap:creatable="false" sap:updatable="false" sap:sortable="false" sap:filterable="false"/>
+                <Property Name="Zcomtr" Type="Edm.String" Nullable="false" MaxLength="31" sap:unicode="false" sap:label="Component trace" sap:creatable="false" sap:updatable="false" sap:sortable="false" sap:filterable="false"/>
+                <Property Name="Znumsig" Type="Edm.String" Nullable="false" MaxLength="3" sap:unicode="false" sap:label="Number of signatures" sap:creatable="false" sap:updatable="false" sap:sortable="false" sap:filterable="false"/>
+                <Property Name="Zopn" Type="Edm.String" Nullable="false" MaxLength="5" sap:unicode="false" sap:label="OP no." sap:creatable="false" sap:updatable="false" sap:sortable="false" sap:filterable="false"/>
+                <Property Name="Zsigval" Type="Edm.String" Nullable="false" MaxLength="5" sap:unicode="false" sap:label="Signature value" sap:creatable="false" sap:updatable="false" sap:sortable="false" sap:filterable="false"/>
+                <Property Name="Zdefc" Type="Edm.String" Nullable="false" MaxLength="5" sap:unicode="false" sap:label="Defect code" sap:creatable="false" sap:updatable="false" sap:sortable="false" sap:filterable="false"/>
+                <Property Name="Zdefic" Type="Edm.String" Nullable="false" MaxLength="9" sap:unicode="false" sap:label="Defect id code" sap:creatable="false" sap:updatable="false" sap:sortable="false" sap:filterable="false"/>
+                <Property Name="Znummuu" Type="Edm.String" Nullable="false" MaxLength="3" sap:unicode="false" sap:label="Nº parts unit" sap:creatable="false" sap:updatable="false" sap:sortable="false" sap:filterable="false"/>
+                <Property Name="Zpref" Type="Edm.String" Nullable="false" MaxLength="13" sap:unicode="false" sap:label="Part reference" sap:creatable="false" sap:updatable="false" sap:sortable="false" sap:filterable="false"/>
+                <Property Name="Ztimres" Type="Edm.String" Nullable="false" MaxLength="14" sap:unicode="false" sap:label="Timestamp report srv" sap:creatable="false" sap:updatable="false" sap:sortable="false" sap:filterable="false"/>
+                <Property Name="Zcomm" Type="Edm.String" Nullable="false" MaxLength="100" sap:unicode="false" sap:label="Comments" sap:creatable="false" sap:updatable="false" sap:sortable="false" sap:filterable="false"/>
+                <Property Name="Zunret" Type="Edm.String" Nullable="false" MaxLength="14" sap:unicode="false" sap:label="Unit requalification" sap:creatable="false" sap:updatable="false" sap:sortable="false" sap:filterable="false"/>
+                <Property Name="Zindt" Type="Edm.String" Nullable="false" MaxLength="2" sap:unicode="false" sap:label="Identified team" sap:creatable="false" sap:updatable="false" sap:sortable="false" sap:filterable="false"/>
+                <Property Name="Zinspt" Type="Edm.String" Nullable="false" MaxLength="1" sap:unicode="false" sap:label="Inspection team" sap:creatable="false" sap:updatable="false" sap:sortable="false" sap:filterable="false"/>
+                <Property Name="Zipnin" Type="Edm.String" Nullable="false" MaxLength="7" sap:unicode="false" sap:label="IPN of the inspector" sap:creatable="false" sap:updatable="false" sap:sortable="false" sap:filterable="false"/>
+                <Property Name="Znumbd" Type="Edm.String" Nullable="false" MaxLength="3" sap:unicode="false" sap:label="Nbr of defects" sap:creatable="false" sap:updatable="false" sap:sortable="false" sap:filterable="false"/>
+                <Property Name="Ziec" Type="Edm.String" Nullable="false" MaxLength="4" sap:unicode="false" sap:label="Initial Element Code" sap:creatable="false" sap:updatable="false" sap:sortable="false" sap:filterable="false"/>
+                <Property Name="Zfec" Type="Edm.String" Nullable="false" MaxLength="4" sap:unicode="false" sap:label="Final Element Code" sap:creatable="false" sap:updatable="false" sap:sortable="false" sap:filterable="false"/>
+                <Property Name="Ziic" Type="Edm.String" Nullable="false" MaxLength="4" sap:unicode="false" sap:label="Initial Incident Cod" sap:creatable="false" sap:updatable="false" sap:sortable="false" sap:filterable="false"/>
+                <Property Name="Zfic" Type="Edm.String" Nullable="false" MaxLength="4" sap:unicode="false" sap:label="Final Incident Code" sap:creatable="false" sap:updatable="false" sap:sortable="false" sap:filterable="false"/>
+                <Property Name="Znopr" Type="Edm.String" Nullable="false" MaxLength="5" sap:unicode="false" sap:label="Nº op report the NC" sap:creatable="false" sap:updatable="false" sap:sortable="false" sap:filterable="false"/>
+                <Property Name="Zallon" Type="Edm.String" Nullable="false" MaxLength="5" sap:unicode="false" sap:label="Allocated op no." sap:creatable="false" sap:updatable="false" sap:sortable="false" sap:filterable="false"/>
+                <Property Name="Zqualncrs" Type="Edm.String" Nullable="false" MaxLength="1" sap:unicode="false" sap:label="Quality NC rep. sta." sap:creatable="false" sap:updatable="false" sap:sortable="false" sap:filterable="false"/>
+                <Property Name="Ztypp" Type="Edm.String" Nullable="false" MaxLength="3" sap:unicode="false" sap:label="Type of part" sap:creatable="false" sap:updatable="false" sap:sortable="false" sap:filterable="false"/>
+                <Property Name="Zdeff" Type="Edm.String" Nullable="false" MaxLength="1" sap:unicode="false" sap:label="Defect family" sap:creatable="false" sap:updatable="false" sap:sortable="false" sap:filterable="false"/>
+                <Property Name="Zsersn" Type="Edm.String" Nullable="false" MaxLength="4" sap:unicode="false" sap:label="SER station no." sap:creatable="false" sap:updatable="false" sap:sortable="false" sap:filterable="false"/>
+                <Property Name="Zrespuc" Type="Edm.String" Nullable="false" MaxLength="6" sap:unicode="false" sap:label="Responsible UET code" sap:creatable="false" sap:updatable="false" sap:sortable="false" sap:filterable="false"/>
+                <Property Name="Zdefidcod" Type="Edm.String" Nullable="false" MaxLength="9" sap:unicode="false" sap:label="Defect id code" sap:creatable="false" sap:updatable="false" sap:sortable="false" sap:filterable="false"/>
+                <Property Name="Znotcr" Type="Edm.String" Nullable="false" MaxLength="1" sap:unicode="false" sap:label="Notification created" sap:creatable="false" sap:updatable="false" sap:sortable="false" sap:filterable="false"/>
+                <Property Name="Qmart" Type="Edm.String" Nullable="false" MaxLength="2" sap:unicode="false" sap:label="Notification type" sap:creatable="false" sap:updatable="false" sap:sortable="false" sap:filterable="false"/>
+                <Property Name="Qmnum" Type="Edm.String" Nullable="false" MaxLength="12" sap:unicode="false" sap:creatable="false" sap:updatable="false" sap:sortable="false" sap:filterable="false"/>
+            </EntityType>
+            <EntityType Name="ZBlockMovements" sap:content-version="1">
+                <Key>
+                    <PropertyRef Name="Mandt"/>
+                    <PropertyRef Name="Qmnum"/>
+                    <PropertyRef Name="Qmart"/>
+                </Key>
+                <Property Name="Mandt" Type="Edm.String" Nullable="false" MaxLength="3" sap:unicode="false" sap:label="Client" sap:creatable="false" sap:updatable="false" sap:sortable="false" sap:filterable="false"/>
+                <Property Name="Qmnum" Type="Edm.String" Nullable="false" MaxLength="12" sap:unicode="false" sap:label="Notification number" sap:creatable="false" sap:updatable="false" sap:sortable="false" sap:filterable="false"/>
+                <Property Name="Qmart" Type="Edm.String" Nullable="false" MaxLength="2" sap:unicode="false" sap:label="Notification type" sap:creatable="false" sap:updatable="false" sap:sortable="false" sap:filterable="false"/>
+                <Property Name="Aufnr" Type="Edm.String" Nullable="false" MaxLength="12" sap:unicode="false" sap:creatable="false" sap:updatable="false" sap:sortable="false"/>
+                <Property Name="Vornr" Type="Edm.String" Nullable="false" MaxLength="10" sap:unicode="false" sap:creatable="false" sap:updatable="false" sap:sortable="false"/>
+                <Property Name="Rsnum" Type="Edm.String" Nullable="false" MaxLength="10" sap:unicode="false" sap:label="Reservation" sap:creatable="false" sap:updatable="false" sap:sortable="false" sap:filterable="false"/>
+                <Property Name="Stlnr" Type="Edm.String" Nullable="false" MaxLength="8" sap:unicode="false" sap:label="Number" sap:creatable="false" sap:updatable="false" sap:sortable="false" sap:filterable="false"/>
+                <Property Name="ItemNumber" Type="Edm.String" Nullable="false" MaxLength="4" sap:unicode="false" sap:label="No." sap:creatable="false" sap:updatable="false" sap:sortable="false" sap:filterable="false"/>
+                <Property Name="Idnrk" Type="Edm.String" Nullable="false" MaxLength="40" sap:unicode="false" sap:label="Component" sap:creatable="false" sap:updatable="false" sap:sortable="false" sap:filterable="false"/>
+                <Property Name="Charg" Type="Edm.String" Nullable="false" MaxLength="10" sap:unicode="false" sap:label="Batch" sap:creatable="false" sap:updatable="false" sap:sortable="false" sap:filterable="false"/>
+                <Property Name="Werks" Type="Edm.String" Nullable="false" MaxLength="4" sap:unicode="false" sap:label="Plant" sap:creatable="false" sap:updatable="false" sap:sortable="false" sap:filterable="false"/>
+                <Property Name="Lgort" Type="Edm.String" Nullable="false" MaxLength="4" sap:unicode="false" sap:label="Location" sap:creatable="false" sap:updatable="false" sap:sortable="false" sap:filterable="false"/>
+                <Property Name="Menge" Type="Edm.Decimal" Nullable="false" Precision="13" Scale="3" sap:unicode="false" sap:unit="UnitOfMeasure" sap:label="Quantity" sap:creatable="false" sap:updatable="false" sap:sortable="false" sap:filterable="false"/>
+                <Property Name="Zblocked" Type="Edm.String" Nullable="false" MaxLength="1" sap:unicode="false" sap:label="Blocked Stock" sap:creatable="false" sap:updatable="false" sap:sortable="false" sap:filterable="false"/>
+                <Property Name="Zfree" Type="Edm.String" Nullable="false" MaxLength="1" sap:unicode="false" sap:label="Unrestricted Use" sap:creatable="false" sap:updatable="false" sap:sortable="false" sap:filterable="false"/>
+                <Property Name="Zscrap" Type="Edm.String" Nullable="false" MaxLength="1" sap:unicode="false" sap:label="SCRAP" sap:creatable="false" sap:updatable="false" sap:sortable="false" sap:filterable="false"/>
+                <Property Name="Datuv" Type="Edm.DateTime" Nullable="false" Precision="7" sap:unicode="false" sap:label="Valid From" sap:creatable="false" sap:updatable="false" sap:sortable="false" sap:filterable="false"/>
+                <Property Name="Time" Type="Edm.String" Nullable="false" MaxLength="6" sap:unicode="false" sap:label="Time" sap:creatable="false" sap:updatable="false" sap:sortable="false" sap:filterable="false"/>
+                <Property Name="Zuser" Type="Edm.String" Nullable="false" MaxLength="12" sap:unicode="false" sap:label="Chgd by" sap:creatable="false" sap:updatable="false" sap:sortable="false"/>
+                <Property Name="UnitOfMeasure" Type="Edm.String" Nullable="false" MaxLength="3" sap:unicode="false" sap:label="Unit of measure" sap:creatable="false" sap:updatable="false" sap:sortable="false" sap:filterable="false" sap:semantics="unit-of-measure"/>
+            </EntityType>
+            <EntityType Name="ZLinkWrkctrElementCause" sap:content-version="1">
+                <Key>
+                    <PropertyRef Name="Mandt"/>
+                    <PropertyRef Name="Werks"/>
+                    <PropertyRef Name="WorkCtr"/>
+                    <PropertyRef Name="ProdOrderOpPlan"/>
+                </Key>
+                <Property Name="Mandt" Type="Edm.String" Nullable="false" MaxLength="3" sap:unicode="false" sap:label="Client" sap:creatable="false" sap:updatable="false" sap:sortable="false" sap:filterable="false"/>
+                <Property Name="Werks" Type="Edm.String" Nullable="false" MaxLength="4" sap:unicode="false" sap:label="Plant" sap:creatable="false" sap:updatable="false" sap:sortable="false" sap:filterable="false"/>
+                <Property Name="WorkCtr" Type="Edm.String" Nullable="false" MaxLength="8" sap:unicode="false" sap:label="Workcenter" sap:creatable="false" sap:updatable="false" sap:sortable="false" sap:filterable="false"/>
+                <Property Name="ProdOrderOpPlan" Type="Edm.String" Nullable="false" MaxLength="8" sap:unicode="false" sap:label="PO Number (OF)" sap:creatable="false" sap:updatable="false" sap:sortable="false" sap:filterable="false"/>
+                <Property Name="DlCodegruppe" Type="Edm.String" Nullable="false" MaxLength="8" sap:unicode="false" sap:label="Code Group Element" sap:creatable="false" sap:updatable="false" sap:sortable="false" sap:filterable="false"/>
+                <Property Name="DlCode" Type="Edm.String" Nullable="false" MaxLength="4" sap:unicode="false" sap:label="Element Code" sap:creatable="false" sap:updatable="false" sap:sortable="false" sap:filterable="false"/>
+                <Property Name="DlDesc" Type="Edm.String" Nullable="false" MaxLength="40" sap:unicode="false" sap:label="Element text" sap:creatable="false" sap:updatable="false" sap:sortable="false" sap:filterable="false"/>
+                <Property Name="CauseCodegruppe" Type="Edm.String" Nullable="false" MaxLength="8" sap:unicode="false" sap:label="Code Group Cause" sap:creatable="false" sap:updatable="false" sap:sortable="false" sap:filterable="false"/>
+                <Property Name="CauseCode" Type="Edm.String" Nullable="false" MaxLength="4" sap:unicode="false" sap:label="Cause code" sap:creatable="false" sap:updatable="false" sap:sortable="false" sap:filterable="false"/>
+                <Property Name="Kurztext" Type="Edm.String" Nullable="false" MaxLength="40" sap:unicode="false" sap:label="Element text" sap:creatable="false" sap:updatable="false" sap:sortable="false" sap:filterable="false"/>
+            </EntityType>
+            <EntityType Name="ZLinkWrkctrElementDefect" sap:content-version="1">
+                <Key>
+                    <PropertyRef Name="Mandt"/>
+                    <PropertyRef Name="Werks"/>
+                    <PropertyRef Name="WorkCtr"/>
+                    <PropertyRef Name="ProdOrderOpPlan"/>
+                </Key>
+                <Property Name="Mandt" Type="Edm.String" Nullable="false" MaxLength="3" sap:unicode="false" sap:label="Client" sap:creatable="false" sap:updatable="false" sap:sortable="false" sap:filterable="false"/>
+                <Property Name="Werks" Type="Edm.String" Nullable="false" MaxLength="4" sap:unicode="false" sap:label="Plant" sap:creatable="false" sap:updatable="false" sap:sortable="false" sap:filterable="false"/>
+                <Property Name="WorkCtr" Type="Edm.String" Nullable="false" MaxLength="8" sap:unicode="false" sap:label="Workcenter" sap:creatable="false" sap:updatable="false" sap:sortable="false" sap:filterable="false"/>
+                <Property Name="ProdOrderOpPlan" Type="Edm.String" Nullable="false" MaxLength="8" sap:unicode="false" sap:creatable="false" sap:updatable="false" sap:sortable="false" sap:filterable="false"/>
+                <Property Name="DlCodegruppe" Type="Edm.String" Nullable="false" MaxLength="8" sap:unicode="false" sap:label="Code Group Element" sap:creatable="false" sap:updatable="false" sap:sortable="false" sap:filterable="false"/>
+                <Property Name="DlCode" Type="Edm.String" Nullable="false" MaxLength="4" sap:unicode="false" sap:label="Element Code" sap:creatable="false" sap:updatable="false" sap:sortable="false" sap:filterable="false"/>
+                <Property Name="DCodegruppe" Type="Edm.String" Nullable="false" MaxLength="8" sap:unicode="false" sap:label="Code Group Defect" sap:creatable="false" sap:updatable="false" sap:sortable="false" sap:filterable="false"/>
+                <Property Name="CauseCodegruppe" Type="Edm.String" Nullable="false" MaxLength="8" sap:unicode="false" sap:creatable="false" sap:updatable="false" sap:sortable="false" sap:filterable="false"/>
+                <Property Name="CauseCode" Type="Edm.String" Nullable="false" MaxLength="4" sap:unicode="false" sap:creatable="false" sap:updatable="false" sap:sortable="false" sap:filterable="false"/>
+                <Property Name="DCode" Type="Edm.String" Nullable="false" MaxLength="4" sap:unicode="false" sap:creatable="false" sap:updatable="false" sap:sortable="false" sap:filterable="false"/>
+            </EntityType>
+            <EntityType Name="ZProvisionalItems" sap:content-version="1">
+                <Key>
+                    <PropertyRef Name="Mandt"/>
+                    <PropertyRef Name="Katalogart"/>
+                </Key>
+                <Property Name="Mandt" Type="Edm.String" Nullable="false" MaxLength="3" sap:unicode="false" sap:label="Client" sap:creatable="false" sap:updatable="false" sap:sortable="false" sap:filterable="false"/>
+                <Property Name="Katalogart" Type="Edm.String" Nullable="false" MaxLength="1" sap:unicode="false" sap:label="Katalogart" sap:creatable="false" sap:updatable="false" sap:sortable="false" sap:filterable="false"/>
+                <Property Name="Codegruppe" Type="Edm.String" Nullable="false" MaxLength="8" sap:unicode="false" sap:label="Code Group Defect" sap:creatable="false" sap:updatable="false" sap:sortable="false" sap:filterable="false"/>
+                <Property Name="Code" Type="Edm.String" Nullable="false" MaxLength="4" sap:unicode="false" sap:label="Element Code" sap:creatable="false" sap:updatable="false" sap:sortable="false" sap:filterable="false"/>
+                <Property Name="Kurztext" Type="Edm.String" Nullable="false" MaxLength="40" sap:unicode="false" sap:label="Element text" sap:creatable="false" sap:updatable="false" sap:sortable="false" sap:filterable="false"/>
+            </EntityType>
+            <EntityType Name="ZDPUTypes" sap:content-version="1">
+                <Key>
+                    <PropertyRef Name="Mandt"/>
+                    <PropertyRef Name="Zdpu"/>
+                </Key>
+                <Property Name="Mandt" Type="Edm.String" Nullable="false" MaxLength="3" sap:unicode="false" sap:label="Client" sap:creatable="false" sap:updatable="false" sap:sortable="false" sap:filterable="false"/>
+                <Property Name="Zdpu" Type="Edm.String" Nullable="false" MaxLength="10" sap:unicode="false" sap:label="DPU Type" sap:creatable="false" sap:updatable="false" sap:sortable="false" sap:filterable="false"/>
+            </EntityType>
+            <EntityType Name="ZCardTypes" sap:content-version="1">
+                <Key>
+                    <PropertyRef Name="Mandt"/>
+                    <PropertyRef Name="Zcard"/>
+                </Key>
+                <Property Name="Mandt" Type="Edm.String" Nullable="false" MaxLength="3" sap:unicode="false" sap:label="Client" sap:creatable="false" sap:updatable="false" sap:sortable="false" sap:filterable="false"/>
+                <Property Name="Zcard" Type="Edm.String" Nullable="false" MaxLength="1" sap:unicode="false" sap:label="Card" sap:creatable="false" sap:updatable="false" sap:sortable="false" sap:filterable="false"/>
+                <Property Name="ZcardText" Type="Edm.String" Nullable="false" MaxLength="40" sap:unicode="false" sap:label="Card text" sap:creatable="false" sap:updatable="false" sap:sortable="false" sap:filterable="false"/>
+            </EntityType>
+            <EntityType Name="ZHierarchyRepairCodes" sap:content-version="1">
+                <Key>
+                    <PropertyRef Name="Mandt"/>
+                    <PropertyRef Name="Werks"/>
+                    <PropertyRef Name="Zproc"/>
+                </Key>
+                <Property Name="Mandt" Type="Edm.String" Nullable="false" MaxLength="3" sap:unicode="false" sap:label="Client" sap:creatable="false" sap:updatable="false" sap:sortable="false" sap:filterable="false"/>
+                <Property Name="Werks" Type="Edm.String" Nullable="false" MaxLength="4" sap:unicode="false" sap:label="Plant" sap:creatable="false" sap:updatable="false" sap:sortable="false" sap:filterable="false"/>
+                <Property Name="Zproc" Type="Edm.String" Nullable="false" MaxLength="10" sap:unicode="false" sap:label="Process" sap:creatable="false" sap:updatable="false" sap:sortable="false" sap:filterable="false"/>
+                <Property Name="Zworks" Type="Edm.String" Nullable="false" MaxLength="10" sap:unicode="false" sap:label="Workshop" sap:creatable="false" sap:updatable="false" sap:sortable="false" sap:filterable="false"/>
+                <Property Name="Arbpl" Type="Edm.String" Nullable="false" MaxLength="8" sap:unicode="false" sap:label="Work Center" sap:creatable="false" sap:updatable="false" sap:sortable="false" sap:filterable="false"/>
+                <Property Name="Zrepcode" Type="Edm.String" Nullable="false" MaxLength="10" sap:unicode="false" sap:label="Repair Code" sap:creatable="false" sap:updatable="false" sap:sortable="false" sap:filterable="false"/>
+                <Property Name="Zrepcodetext" Type="Edm.String" Nullable="false" MaxLength="40" sap:unicode="false" sap:label="Repair Code Text" sap:creatable="false" sap:updatable="false" sap:sortable="false" sap:filterable="false"/>
+            </EntityType>
+            <EntityType Name="ZRepairCodes" sap:content-version="1">
+                <Key>
+                    <PropertyRef Name="Mandt"/>
+                    <PropertyRef Name="Zrepcode"/>
+                </Key>
+                <Property Name="Mandt" Type="Edm.String" Nullable="false" MaxLength="3" sap:unicode="false" sap:label="Client" sap:creatable="false" sap:updatable="false" sap:sortable="false" sap:filterable="false"/>
+                <Property Name="Zrepcode" Type="Edm.String" Nullable="false" MaxLength="10" sap:unicode="false" sap:label="Repair Code" sap:creatable="false" sap:updatable="false" sap:sortable="false" sap:filterable="false"/>
+                <Property Name="Zrepcodetext" Type="Edm.String" Nullable="false" MaxLength="40" sap:unicode="false" sap:label="Repair Code Text" sap:creatable="false" sap:updatable="false" sap:sortable="false" sap:filterable="false"/>
+            </EntityType>
+            <EntityType Name="ZElementsLocations" sap:content-version="1">
+                <Key>
+                    <PropertyRef Name="Mandt"/>
+                    <PropertyRef Name="DlCodegruppe"/>
+                    <PropertyRef Name="DlCode"/>
+                </Key>
+                <Property Name="Mandt" Type="Edm.String" Nullable="false" MaxLength="3" sap:unicode="false" sap:label="Client" sap:creatable="false" sap:updatable="false" sap:sortable="false" sap:filterable="false"/>
+                <Property Name="DlCodegruppe" Type="Edm.String" Nullable="false" MaxLength="8" sap:unicode="false" sap:label="Code Group Element" sap:creatable="false" sap:updatable="false" sap:sortable="false" sap:filterable="false"/>
+                <Property Name="DlCode" Type="Edm.String" Nullable="false" MaxLength="4" sap:unicode="false" sap:label="Element Code" sap:creatable="false" sap:updatable="false" sap:sortable="false" sap:filterable="false"/>
+                <Property Name="DlDesc" Type="Edm.String" Nullable="false" MaxLength="40" sap:unicode="false" sap:label="Element text" sap:creatable="false" sap:updatable="false" sap:sortable="false" sap:filterable="false"/>
+                <Property Name="Zlocation" Type="Edm.String" Nullable="false" MaxLength="2" sap:unicode="false" sap:label="Location" sap:creatable="false" sap:updatable="false" sap:sortable="false" sap:filterable="false"/>
+                <Property Name="Zlocdesc" Type="Edm.String" Nullable="false" MaxLength="40" sap:unicode="false" sap:label="Location Desc" sap:creatable="false" sap:updatable="false" sap:sortable="false" sap:filterable="false"/>
+            </EntityType>
+            <EntityType Name="ZLinkElementsLocations" sap:content-version="1">
+                <Key>
+                    <PropertyRef Name="Mandt"/>
+                    <PropertyRef Name="Werks"/>
+                    <PropertyRef Name="WorkCtr"/>
+                    <PropertyRef Name="ProdOrderOpPlan"/>
+                </Key>
+                <Property Name="Mandt" Type="Edm.String" Nullable="false" MaxLength="3" sap:unicode="false" sap:label="Client" sap:creatable="false" sap:updatable="false" sap:sortable="false" sap:filterable="false"/>
+                <Property Name="Werks" Type="Edm.String" Nullable="false" MaxLength="4" sap:unicode="false" sap:label="Plant" sap:creatable="false" sap:updatable="false" sap:sortable="false" sap:filterable="false"/>
+                <Property Name="WorkCtr" Type="Edm.String" Nullable="false" MaxLength="8" sap:unicode="false" sap:label="Workcenter" sap:creatable="false" sap:updatable="false" sap:sortable="false" sap:filterable="false"/>
+                <Property Name="ProdOrderOpPlan" Type="Edm.String" Nullable="false" MaxLength="8" sap:unicode="false" sap:label="PO Number (OF)" sap:creatable="false" sap:updatable="false" sap:sortable="false" sap:filterable="false"/>
+                <Property Name="DlCodegruppe" Type="Edm.String" Nullable="false" MaxLength="8" sap:unicode="false" sap:label="Code Group Element" sap:creatable="false" sap:updatable="false" sap:sortable="false" sap:filterable="false"/>
+                <Property Name="DlCode" Type="Edm.String" Nullable="false" MaxLength="4" sap:unicode="false" sap:label="Element Code" sap:creatable="false" sap:updatable="false" sap:sortable="false" sap:filterable="false"/>
+                <Property Name="DlDesc" Type="Edm.String" Nullable="false" MaxLength="40" sap:unicode="false" sap:label="Element text" sap:creatable="false" sap:updatable="false" sap:sortable="false" sap:filterable="false"/>
+                <Property Name="Zlocation" Type="Edm.String" Nullable="false" MaxLength="2" sap:unicode="false" sap:label="Location" sap:creatable="false" sap:updatable="false" sap:sortable="false" sap:filterable="false"/>
+                <Property Name="Zlocdesc" Type="Edm.String" Nullable="false" MaxLength="40" sap:unicode="false" sap:label="Location Desc" sap:creatable="false" sap:updatable="false" sap:sortable="false" sap:filterable="false"/>
+            </EntityType>
+            <EntityType Name="ZshCodeGroupDefect" sap:content-version="1">
+                <Key>
+                    <PropertyRef Name="Codegruppe"/>
+                </Key>
+                <Property Name="Codegruppe" Type="Edm.String" Nullable="false" MaxLength="8" sap:unicode="false" sap:label="Code Group" sap:creatable="false" sap:updatable="false" sap:sortable="false" sap:filterable="false"/>
+                <Property Name="Katalogart" Type="Edm.String" Nullable="false" MaxLength="1" sap:unicode="false" sap:label="Catalog" sap:creatable="false" sap:updatable="false" sap:sortable="false" sap:filterable="false"/>
+            </EntityType>
+            <EntityType Name="ZshCodeGroupElement" sap:content-version="1">
+                <Key>
+                    <PropertyRef Name="Codegruppe"/>
+                </Key>
+                <Property Name="Codegruppe" Type="Edm.String" Nullable="false" MaxLength="8" sap:unicode="false" sap:label="Code Group" sap:creatable="false" sap:updatable="false" sap:sortable="false" sap:filterable="false"/>
+                <Property Name="Katalogart" Type="Edm.String" Nullable="false" MaxLength="1" sap:unicode="false" sap:label="Catalog" sap:creatable="false" sap:updatable="false" sap:sortable="false" sap:filterable="false"/>
+            </EntityType>
+            <EntityType Name="ZshCodeGrupCause" sap:content-version="1">
+                <Key>
+                    <PropertyRef Name="Codegruppe"/>
+                </Key>
+                <Property Name="Codegruppe" Type="Edm.String" Nullable="false" MaxLength="8" sap:unicode="false" sap:label="Code Group" sap:creatable="false" sap:updatable="false" sap:sortable="false" sap:filterable="false"/>
+                <Property Name="Katalogart" Type="Edm.String" Nullable="false" MaxLength="1" sap:unicode="false" sap:label="Catalog" sap:creatable="false" sap:updatable="false" sap:sortable="false" sap:filterable="false"/>
+            </EntityType>
+            <EntityType Name="ZshCauseCode" sap:content-version="1">
+                <Key>
+                    <PropertyRef Name="Code"/>
+                </Key>
+                <Property Name="Code" Type="Edm.String" Nullable="false" MaxLength="4" sap:unicode="false" sap:label="Code" sap:creatable="false" sap:updatable="false" sap:sortable="false" sap:filterable="false"/>
+                <Property Name="Katalogart" Type="Edm.String" Nullable="false" MaxLength="1" sap:unicode="false" sap:label="Catalog" sap:creatable="false" sap:updatable="false" sap:sortable="false" sap:filterable="false"/>
+            </EntityType>
+            <EntityType Name="ZshMONumber" sap:content-version="1">
+                <Key>
+                    <PropertyRef Name="Aufnr"/>
+                </Key>
+                <Property Name="Aufnr" Type="Edm.String" Nullable="false" MaxLength="12" sap:unicode="false" sap:label="Order" sap:creatable="false" sap:updatable="false" sap:sortable="false" sap:filterable="false"/>
+            </EntityType>
+            <EntityType Name="ZshOPNumber" sap:content-version="1">
+                <Key>
+                    <PropertyRef Name="Sortf"/>
+                </Key>
+                <Property Name="Sortf" Type="Edm.String" Nullable="false" MaxLength="10" sap:unicode="false" sap:label="Sort String" sap:creatable="false" sap:updatable="false" sap:sortable="false" sap:filterable="false"/>
+            </EntityType>
+            <EntityType Name="ZshMaterial" sap:content-version="1">
+                <Key>
+                    <PropertyRef Name="Idnrk"/>
+                </Key>
+                <Property Name="Idnrk" Type="Edm.String" Nullable="false" MaxLength="40" sap:unicode="false" sap:label="Component" sap:creatable="false" sap:updatable="false" sap:sortable="false" sap:filterable="false"/>
+            </EntityType>
+            <EntityType Name="ZshWorkCenter" sap:content-version="1">
+                <Key>
+                    <PropertyRef Name="Werks"/>
+                </Key>
+                <Property Name="WorkCtr" Type="Edm.String" Nullable="false" MaxLength="8" sap:unicode="false" sap:creatable="false" sap:updatable="false" sap:sortable="false" sap:filterable="false"/>
+                <Property Name="Werks" Type="Edm.String" Nullable="false" MaxLength="4" sap:unicode="false" sap:creatable="false" sap:updatable="false" sap:sortable="false" sap:filterable="false"/>
+            </EntityType>
+            <EntityType Name="ZshElementCode" sap:content-version="1">
+                <Key>
+                    <PropertyRef Name="Werks"/>
+                </Key>
+                <Property Name="DlCode" Type="Edm.String" Nullable="false" MaxLength="4" sap:unicode="false" sap:creatable="false" sap:updatable="false" sap:sortable="false" sap:filterable="false"/>
+                <Property Name="Werks" Type="Edm.String" Nullable="false" MaxLength="4" sap:unicode="false" sap:creatable="false" sap:updatable="false" sap:sortable="false" sap:filterable="false"/>
+            </EntityType>
+            <EntityType Name="ZshDefectCode" sap:content-version="1">
+                <Key>
+                    <PropertyRef Name="Werks"/>
+                </Key>
+                <Property Name="DCode" Type="Edm.String" Nullable="false" MaxLength="4" sap:unicode="false" sap:creatable="false" sap:updatable="false" sap:sortable="false" sap:filterable="false"/>
+                <Property Name="Werks" Type="Edm.String" Nullable="false" MaxLength="4" sap:unicode="false" sap:creatable="false" sap:updatable="false" sap:sortable="false" sap:filterable="false"/>
+            </EntityType>
+            <EntityType Name="HT001w" sap:content-version="1">
+                <Key>
+                    <PropertyRef Name="Werks"/>
+                </Key>
+                <Property Name="Werks" Type="Edm.String" Nullable="false" MaxLength="4" sap:unicode="false" sap:label="Plant" sap:creatable="false" sap:updatable="false" sap:sortable="false" sap:filterable="false"/>
+                <Property Name="Name1" Type="Edm.String" Nullable="false" MaxLength="40" sap:unicode="false" sap:label="Name" sap:creatable="false" sap:updatable="false" sap:sortable="false" sap:filterable="false"/>
+                <Property Name="Sort2" Type="Edm.String" Nullable="false" MaxLength="20" sap:unicode="false" sap:label="Search Term 2" sap:creatable="false" sap:updatable="false" sap:sortable="false" sap:filterable="false"/>
+                <Property Name="Sort1" Type="Edm.String" Nullable="false" MaxLength="20" sap:unicode="false" sap:label="Search Term 1" sap:creatable="false" sap:updatable="false" sap:sortable="false" sap:filterable="false"/>
+                <Property Name="PostCode1" Type="Edm.String" Nullable="false" MaxLength="10" sap:unicode="false" sap:label="Postal Code" sap:creatable="false" sap:updatable="false" sap:sortable="false" sap:filterable="false"/>
+                <Property Name="City1" Type="Edm.String" Nullable="false" MaxLength="40" sap:unicode="false" sap:label="City" sap:creatable="false" sap:updatable="false" sap:sortable="false" sap:filterable="false"/>
+                <Property Name="Name2" Type="Edm.String" Nullable="false" MaxLength="40" sap:unicode="false" sap:label="Name 2" sap:creatable="false" sap:updatable="false" sap:sortable="false" sap:filterable="false"/>
+                <Property Name="Nation" Type="Edm.String" Nullable="false" MaxLength="1" sap:unicode="false" sap:label="Address Version" sap:creatable="false" sap:updatable="false" sap:sortable="false" sap:filterable="false"/>
+            </EntityType>
+            <EntityType Name="ZshOrder" sap:content-version="1">
+                <Key>
+                    <PropertyRef Name="Aufnr"/>
+                </Key>
+                <Property Name="Aufnr" Type="Edm.String" Nullable="false" MaxLength="12" sap:unicode="false" sap:label="Order" sap:creatable="false" sap:updatable="false" sap:sortable="false" sap:filterable="false"/>
+                <Property Name="Auart" Type="Edm.String" Nullable="false" MaxLength="4" sap:unicode="false" sap:label="Order Type" sap:creatable="false" sap:updatable="false" sap:sortable="false" sap:filterable="false"/>
+                <Property Name="Erdat" Type="Edm.DateTime" Nullable="false" Precision="7" sap:unicode="false" sap:label="Created On" sap:creatable="false" sap:updatable="false" sap:sortable="false" sap:filterable="false"/>
+                <Property Name="Bukrs" Type="Edm.String" Nullable="false" MaxLength="4" sap:unicode="false" sap:label="Company Code" sap:creatable="false" sap:updatable="false" sap:sortable="false" sap:filterable="false"/>
+                <Property Name="Werks" Type="Edm.String" Nullable="false" MaxLength="4" sap:unicode="false" sap:label="Plant" sap:creatable="false" sap:updatable="false" sap:sortable="false" sap:filterable="false"/>
+                <Property Name="Kokrs" Type="Edm.String" Nullable="false" MaxLength="4" sap:unicode="false" sap:label="CO Area" sap:creatable="false" sap:updatable="false" sap:sortable="false" sap:filterable="false"/>
+            </EntityType>
+            <EntityType Name="HMcha" sap:content-version="1">
+                <Key>
+                    <PropertyRef Name="Charg"/>
+                </Key>
+                <Property Name="Matnr" Type="Edm.String" Nullable="false" MaxLength="40" sap:unicode="false" sap:label="Material" sap:creatable="false" sap:updatable="false" sap:sortable="false" sap:filterable="false"/>
+                <Property Name="Werks" Type="Edm.String" Nullable="false" MaxLength="4" sap:unicode="false" sap:label="Plant" sap:creatable="false" sap:updatable="false" sap:sortable="false" sap:filterable="false"/>
+                <Property Name="Charg" Type="Edm.String" Nullable="false" MaxLength="10" sap:unicode="false" sap:label="Batch" sap:creatable="false" sap:updatable="false" sap:sortable="false" sap:filterable="false"/>
+            </EntityType>
+            <EntityType Name="ZfmGetBom" sap:content-version="1">
+                <Key>
+                    <PropertyRef Name="ProdOrder"/>
+                </Key>
+                <Property Name="ProdOrder" Type="Edm.String" Nullable="false" MaxLength="12" sap:unicode="false" sap:label="Prod. Order" sap:creatable="false" sap:updatable="false" sap:sortable="false" sap:filterable="false"/>
+                <Property Name="ProdOrderOpPlan" Type="Edm.String" Nullable="false" MaxLength="10" sap:unicode="false" sap:label="Activity" sap:creatable="false" sap:updatable="false" sap:sortable="false" sap:filterable="false"/>
+                <Property Name="ReturnLog" Type="Edm.String" Nullable="false" MaxLength="80" sap:unicode="false" sap:label="Text" sap:creatable="false" sap:updatable="false" sap:sortable="false" sap:filterable="false"/>
+                <Property Name="ItemNo" Type="Edm.String" Nullable="false" MaxLength="4" sap:unicode="false" sap:label="Item" sap:creatable="false" sap:updatable="false" sap:sortable="false" sap:filterable="false"/>
+                <Property Name="Component" Type="Edm.String" Nullable="false" MaxLength="40" sap:unicode="false" sap:label="Material" sap:creatable="false" sap:updatable="false" sap:sortable="false" sap:filterable="false"/>
+                <Property Name="CompQty" Type="Edm.String" Nullable="false" MaxLength="18" sap:unicode="false" sap:label="Quantity" sap:creatable="false" sap:updatable="false" sap:sortable="false" sap:filterable="false"/>
+                <Property Name="Charg" Type="Edm.String" Nullable="false" MaxLength="10" sap:unicode="false" sap:label="Batch" sap:creatable="false" sap:updatable="false" sap:sortable="false" sap:filterable="false"/>
+                <Property Name="Licha" Type="Edm.String" Nullable="false" MaxLength="15" sap:unicode="false" sap:label="Supplier Batch" sap:creatable="false" sap:updatable="false" sap:sortable="false" sap:filterable="false"/>
+                <Property Name="IssueLoc" Type="Edm.String" Nullable="false" MaxLength="4" sap:unicode="false" sap:label="StorageLocation" sap:creatable="false" sap:updatable="false" sap:sortable="false" sap:filterable="false"/>
+                <Property Name="Message" Type="Edm.String" Nullable="false" MaxLength="50" sap:unicode="false" sap:label="c" sap:creatable="false" sap:updatable="false" sap:sortable="false" sap:filterable="false"/>
+            </EntityType>
+            <EntityType Name="ZfmGetMaterial" sap:content-version="1">
+                <Key>
+                    <PropertyRef Name="ProdOrder"/>
+                </Key>
+                <Property Name="ProdOrder" Type="Edm.String" Nullable="false" MaxLength="12" sap:unicode="false" sap:label="Prod. Order" sap:creatable="false" sap:updatable="false" sap:sortable="false" sap:filterable="false"/>
+                <Property Name="Batch" Type="Edm.String" Nullable="false" MaxLength="10" sap:unicode="false" sap:label="Batch" sap:creatable="false" sap:updatable="false" sap:sortable="false" sap:filterable="false"/>
+                <Property Name="Material" Type="Edm.String" Nullable="false" MaxLength="40" sap:unicode="false" sap:label="Material" sap:creatable="false" sap:updatable="false" sap:sortable="false" sap:filterable="false"/>
+            </EntityType>
+            <EntityType Name="ZshOperation" sap:content-version="1">
+                <Key>
+                    <PropertyRef Name="Aufnr"/>
+                </Key>
+                <Property Name="Aufnr" Type="Edm.String" Nullable="false" MaxLength="12" sap:unicode="false" sap:label="Order" sap:creatable="false" sap:updatable="false" sap:sortable="false" sap:filterable="false"/>
+                <Property Name="Vornr" Type="Edm.String" Nullable="false" MaxLength="4" sap:unicode="false" sap:label="Activity" sap:creatable="false" sap:updatable="false" sap:sortable="false" sap:filterable="false"/>
+            </EntityType>
+            <EntityType Name="ItBomItem" sap:content-version="1">
+                <Key>
+                    <PropertyRef Name="ItemNo"/>
+                    <PropertyRef Name="Component"/>
+                </Key>
+                <Property Name="ItemNo" Type="Edm.String" Nullable="false" MaxLength="4" sap:unicode="false" sap:label="Item" sap:creatable="false" sap:updatable="false" sap:sortable="false" sap:filterable="false"/>
+                <Property Name="Component" Type="Edm.String" Nullable="false" MaxLength="40" sap:unicode="false" sap:label="Material" sap:creatable="false" sap:updatable="false" sap:sortable="false" sap:filterable="false"/>
+                <Property Name="CompQty" Type="Edm.String" Nullable="false" MaxLength="18" sap:unicode="false" sap:label="Quantity" sap:creatable="false" sap:updatable="false" sap:sortable="false" sap:filterable="false"/>
+                <Property Name="Charg" Type="Edm.String" Nullable="false" MaxLength="10" sap:unicode="false" sap:label="Batch" sap:creatable="false" sap:updatable="false" sap:sortable="false" sap:filterable="false"/>
+                <Property Name="Licha" Type="Edm.String" Nullable="false" MaxLength="15" sap:unicode="false" sap:label="Supplier Batch" sap:creatable="false" sap:updatable="false" sap:sortable="false" sap:filterable="false"/>
+                <Property Name="IssueLoc" Type="Edm.String" Nullable="false" MaxLength="4" sap:unicode="false" sap:label="StorageLocation" sap:creatable="false" sap:updatable="false" sap:sortable="false" sap:filterable="false"/>
+                <Property Name="Message" Type="Edm.String" Nullable="false" MaxLength="50" sap:unicode="false" sap:label="c" sap:creatable="false" sap:updatable="false" sap:sortable="false" sap:filterable="false"/>
+                <Property Name="ChangeNo" Type="Edm.String" Nullable="false" MaxLength="12" sap:unicode="false" sap:label="Change Number" sap:creatable="false" sap:updatable="false" sap:sortable="false" sap:filterable="false"/>
+            </EntityType>
+            <EntityType Name="ZfmSaveDefect" sap:content-version="1">
+                <Key>
+                    <PropertyRef Name="IvAufnr"/>
+                </Key>
+                <Property Name="IvAufnr" Type="Edm.String" Nullable="false" MaxLength="12" sap:unicode="false" sap:creatable="false" sap:updatable="false" sap:sortable="false" sap:filterable="false"/>
+                <Property Name="IvIsStockMovement" Type="Edm.Boolean" Nullable="false" sap:unicode="false" sap:creatable="false" sap:updatable="false" sap:sortable="false" sap:filterable="false"/>
+                <Property Name="IvSerialno" Type="Edm.String" Nullable="false" MaxLength="18" sap:unicode="false" sap:creatable="false" sap:updatable="false" sap:sortable="false" sap:filterable="false"/>
+                <Property Name="IvVornr" Type="Edm.String" Nullable="false" MaxLength="10" sap:unicode="false" sap:creatable="false" sap:updatable="false" sap:sortable="false" sap:filterable="false"/>
+                <Property Name="IvWerks" Type="Edm.String" Nullable="false" MaxLength="4" sap:unicode="false" sap:creatable="false" sap:updatable="false" sap:sortable="false" sap:filterable="false"/>
+                <Property Name="IvWorkCtr" Type="Edm.String" Nullable="false" MaxLength="8" sap:unicode="false" sap:creatable="false" sap:updatable="false" sap:sortable="false" sap:filterable="false"/>
+                <Property Name="EvAufnr" Type="Edm.String" Nullable="false" MaxLength="12" sap:unicode="false" sap:creatable="false" sap:updatable="false" sap:sortable="false" sap:filterable="false"/>
+                <NavigationProperty Name="BomItemSet" Relationship="ZDOM_SIPMECA_SRV_01.SaveDefectBomItem" FromRole="FromRole_SaveDefectBomItem" ToRole="ToRole_SaveDefectBomItem"/>
+                <NavigationProperty Name="ReturnSet" Relationship="ZDOM_SIPMECA_SRV_01.SaveDefectReturn" FromRole="FromRole_SaveDefectReturn" ToRole="ToRole_SaveDefectReturn"/>
+            </EntityType>
+            <EntityType Name="et_return" sap:content-version="1">
+                <Key>
+                    <PropertyRef Name="Id"/>
+                </Key>
+                <Property Name="Type" Type="Edm.String" Nullable="false" MaxLength="1" sap:unicode="false" sap:label="Message type" sap:creatable="false" sap:updatable="false" sap:sortable="false" sap:filterable="false"/>
+                <Property Name="Id" Type="Edm.String" Nullable="false" MaxLength="20" sap:unicode="false" sap:label="Message Class" sap:creatable="false" sap:updatable="false" sap:sortable="false" sap:filterable="false"/>
+                <Property Name="Number" Type="Edm.String" Nullable="false" MaxLength="3" sap:unicode="false" sap:label="Message Number" sap:creatable="false" sap:updatable="false" sap:sortable="false" sap:filterable="false"/>
+                <Property Name="Message" Type="Edm.String" Nullable="false" MaxLength="220" sap:unicode="false" sap:label="Message Text" sap:creatable="false" sap:updatable="false" sap:sortable="false" sap:filterable="false"/>
+                <Property Name="LogNo" Type="Edm.String" Nullable="false" MaxLength="20" sap:unicode="false" sap:label="Log Number" sap:creatable="false" sap:updatable="false" sap:sortable="false" sap:filterable="false"/>
+                <Property Name="LogMsgNo" Type="Edm.String" Nullable="false" MaxLength="6" sap:unicode="false" sap:label="Message Number" sap:creatable="false" sap:updatable="false" sap:sortable="false" sap:filterable="false"/>
+                <Property Name="MessageV1" Type="Edm.String" Nullable="false" MaxLength="50" sap:unicode="false" sap:label="Message Variable" sap:creatable="false" sap:updatable="false" sap:sortable="false" sap:filterable="false"/>
+                <Property Name="MessageV2" Type="Edm.String" Nullable="false" MaxLength="50" sap:unicode="false" sap:label="Message Variable" sap:creatable="false" sap:updatable="false" sap:sortable="false" sap:filterable="false"/>
+                <Property Name="MessageV3" Type="Edm.String" Nullable="false" MaxLength="50" sap:unicode="false" sap:label="Message Variable" sap:creatable="false" sap:updatable="false" sap:sortable="false" sap:filterable="false"/>
+                <Property Name="MessageV4" Type="Edm.String" Nullable="false" MaxLength="50" sap:unicode="false" sap:label="Message Variable" sap:creatable="false" sap:updatable="false" sap:sortable="false" sap:filterable="false"/>
+                <Property Name="Parameter" Type="Edm.String" Nullable="false" MaxLength="32" sap:unicode="false" sap:label="Parameter Name" sap:creatable="false" sap:updatable="false" sap:sortable="false" sap:filterable="false"/>
+                <Property Name="Row" Type="Edm.Int32" Nullable="false" sap:unicode="false" sap:label="Parameter line" sap:creatable="false" sap:updatable="false" sap:sortable="false" sap:filterable="false"/>
+                <Property Name="Field" Type="Edm.String" Nullable="false" MaxLength="30" sap:unicode="false" sap:label="Field name" sap:creatable="false" sap:updatable="false" sap:sortable="false" sap:filterable="false"/>
+                <Property Name="System" Type="Edm.String" Nullable="false" MaxLength="10" sap:unicode="false" sap:label="Logical system" sap:creatable="false" sap:updatable="false" sap:sortable="false" sap:filterable="false"/>
+            </EntityType>
+            <EntityType Name="ZshReason" sap:content-version="1">
+                <Key>
+                    <PropertyRef Name="Bwart"/>
+                </Key>
+                <Property Name="Bwart" Type="Edm.String" Nullable="false" MaxLength="3" sap:unicode="false" sap:creatable="false" sap:updatable="false" sap:sortable="false" sap:filterable="false"/>
+                <Property Name="Grund" Type="Edm.String" Nullable="false" MaxLength="4" sap:unicode="false" sap:creatable="false" sap:updatable="false" sap:sortable="false" sap:filterable="false"/>
+                <Property Name="Grtxt" Type="Edm.String" Nullable="false" MaxLength="20" sap:unicode="false" sap:creatable="false" sap:updatable="false" sap:sortable="false" sap:filterable="false"/>
+            </EntityType>
+            <Association Name="SaveDefectReturn" sap:content-version="1">
+                <End Type="ZDOM_SIPMECA_SRV_01.ZfmSaveDefect" Multiplicity="1" Role="FromRole_SaveDefectReturn"/>
+                <End Type="ZDOM_SIPMECA_SRV_01.et_return" Multiplicity="*" Role="ToRole_SaveDefectReturn"/>
+                <ReferentialConstraint>
+                    <Principal Role="FromRole_SaveDefectReturn">
+                        <PropertyRef Name="IvAufnr"/>
+                    </Principal>
+                    <Dependent Role="ToRole_SaveDefectReturn">
+                        <PropertyRef Name="Id"/>
+                    </Dependent>
+                </ReferentialConstraint>
+            </Association>
+            <Association Name="SaveDefectBomItem" sap:content-version="1">
+                <End Type="ZDOM_SIPMECA_SRV_01.ZfmSaveDefect" Multiplicity="1" Role="FromRole_SaveDefectBomItem"/>
+                <End Type="ZDOM_SIPMECA_SRV_01.ItBomItem" Multiplicity="*" Role="ToRole_SaveDefectBomItem"/>
+                <ReferentialConstraint>
+                    <Principal Role="FromRole_SaveDefectBomItem">
+                        <PropertyRef Name="IvAufnr"/>
+                    </Principal>
+                    <Dependent Role="ToRole_SaveDefectBomItem">
+                        <PropertyRef Name="Component"/>
+                    </Dependent>
+                </ReferentialConstraint>
+            </Association>
+            <EntityContainer Name="ZDOM_SIPMECA_SRV_01_Entities" m:IsDefaultEntityContainer="true" sap:supported-formats="atom json xlsx">
+                <EntitySet Name="ZSipmecaSet" EntityType="ZDOM_SIPMECA_SRV_01.ZSipmeca" sap:content-version="1"/>
+                <EntitySet Name="ZBlockMovementsSet" EntityType="ZDOM_SIPMECA_SRV_01.ZBlockMovements" sap:content-version="1"/>
+                <EntitySet Name="ZLinkWrkctrElementCauseSet" EntityType="ZDOM_SIPMECA_SRV_01.ZLinkWrkctrElementCause" sap:creatable="false" sap:updatable="false" sap:deletable="false" sap:pageable="false" sap:content-version="1"/>
+                <EntitySet Name="ZLinkWrkctrElementDefectSet" EntityType="ZDOM_SIPMECA_SRV_01.ZLinkWrkctrElementDefect" sap:content-version="1"/>
+                <EntitySet Name="ZProvisionalItemsSet" EntityType="ZDOM_SIPMECA_SRV_01.ZProvisionalItems" sap:creatable="false" sap:updatable="false" sap:deletable="false" sap:pageable="false" sap:content-version="1"/>
+                <EntitySet Name="ZDPUTypesSet" EntityType="ZDOM_SIPMECA_SRV_01.ZDPUTypes" sap:creatable="false" sap:updatable="false" sap:deletable="false" sap:pageable="false" sap:content-version="1"/>
+                <EntitySet Name="ZCardTypesSet" EntityType="ZDOM_SIPMECA_SRV_01.ZCardTypes" sap:creatable="false" sap:updatable="false" sap:deletable="false" sap:pageable="false" sap:content-version="1"/>
+                <EntitySet Name="ZHierarchyRepairCodesSet" EntityType="ZDOM_SIPMECA_SRV_01.ZHierarchyRepairCodes" sap:creatable="false" sap:updatable="false" sap:deletable="false" sap:pageable="false" sap:content-version="1"/>
+                <EntitySet Name="ZRepairCodesSet" EntityType="ZDOM_SIPMECA_SRV_01.ZRepairCodes" sap:creatable="false" sap:updatable="false" sap:deletable="false" sap:pageable="false" sap:content-version="1"/>
+                <EntitySet Name="ZElementsLocationsSet" EntityType="ZDOM_SIPMECA_SRV_01.ZElementsLocations" sap:creatable="false" sap:updatable="false" sap:deletable="false" sap:pageable="false" sap:content-version="1"/>
+                <EntitySet Name="ZLinkElementsLocationsSet" EntityType="ZDOM_SIPMECA_SRV_01.ZLinkElementsLocations" sap:creatable="false" sap:updatable="false" sap:deletable="false" sap:pageable="false" sap:content-version="1"/>
+                <EntitySet Name="ZshCodeGroupDefectSet" EntityType="ZDOM_SIPMECA_SRV_01.ZshCodeGroupDefect" sap:creatable="false" sap:updatable="false" sap:deletable="false" sap:pageable="false" sap:content-version="1"/>
+                <EntitySet Name="ZshCodeGroupElementSet" EntityType="ZDOM_SIPMECA_SRV_01.ZshCodeGroupElement" sap:creatable="false" sap:updatable="false" sap:deletable="false" sap:pageable="false" sap:content-version="1"/>
+                <EntitySet Name="ZshCodeGrupCauseSet" EntityType="ZDOM_SIPMECA_SRV_01.ZshCodeGrupCause" sap:creatable="false" sap:updatable="false" sap:deletable="false" sap:pageable="false" sap:content-version="1"/>
+                <EntitySet Name="ZshCauseCodeSet" EntityType="ZDOM_SIPMECA_SRV_01.ZshCauseCode" sap:creatable="false" sap:updatable="false" sap:deletable="false" sap:pageable="false" sap:content-version="1"/>
+                <EntitySet Name="ZshMONumberSet" EntityType="ZDOM_SIPMECA_SRV_01.ZshMONumber" sap:creatable="false" sap:updatable="false" sap:deletable="false" sap:pageable="false" sap:content-version="1"/>
+                <EntitySet Name="ZshOPNumberSet" EntityType="ZDOM_SIPMECA_SRV_01.ZshOPNumber" sap:creatable="false" sap:updatable="false" sap:deletable="false" sap:pageable="false" sap:content-version="1"/>
+                <EntitySet Name="ZshMaterialSet" EntityType="ZDOM_SIPMECA_SRV_01.ZshMaterial" sap:creatable="false" sap:updatable="false" sap:deletable="false" sap:pageable="false" sap:content-version="1"/>
+                <EntitySet Name="ZshWorkCenterSet" EntityType="ZDOM_SIPMECA_SRV_01.ZshWorkCenter" sap:creatable="false" sap:updatable="false" sap:deletable="false" sap:pageable="false" sap:content-version="1"/>
+                <EntitySet Name="ZshElementCodeSet" EntityType="ZDOM_SIPMECA_SRV_01.ZshElementCode" sap:creatable="false" sap:updatable="false" sap:deletable="false" sap:pageable="false" sap:content-version="1"/>
+                <EntitySet Name="ZshDefectCodeSet" EntityType="ZDOM_SIPMECA_SRV_01.ZshDefectCode" sap:creatable="false" sap:updatable="false" sap:deletable="false" sap:pageable="false" sap:content-version="1"/>
+                <EntitySet Name="HT001wSet" EntityType="ZDOM_SIPMECA_SRV_01.HT001w" sap:creatable="false" sap:updatable="false" sap:deletable="false" sap:pageable="false" sap:content-version="1"/>
+                <EntitySet Name="ZshOrderSet" EntityType="ZDOM_SIPMECA_SRV_01.ZshOrder" sap:creatable="false" sap:updatable="false" sap:deletable="false" sap:pageable="false" sap:content-version="1"/>
+                <EntitySet Name="HMchaSet" EntityType="ZDOM_SIPMECA_SRV_01.HMcha" sap:creatable="false" sap:updatable="false" sap:deletable="false" sap:pageable="false" sap:content-version="1"/>
+                <EntitySet Name="ZfmGetBomSet" EntityType="ZDOM_SIPMECA_SRV_01.ZfmGetBom" sap:creatable="false" sap:updatable="false" sap:deletable="false" sap:pageable="false" sap:content-version="1"/>
+                <EntitySet Name="ZfmGetMaterialSet" EntityType="ZDOM_SIPMECA_SRV_01.ZfmGetMaterial" sap:creatable="false" sap:updatable="false" sap:deletable="false" sap:pageable="false" sap:content-version="1"/>
+                <EntitySet Name="ZshOperationSet" EntityType="ZDOM_SIPMECA_SRV_01.ZshOperation" sap:creatable="false" sap:updatable="false" sap:deletable="false" sap:pageable="false" sap:content-version="1"/>
+                <EntitySet Name="ItBomItemSet" EntityType="ZDOM_SIPMECA_SRV_01.ItBomItem" sap:creatable="false" sap:updatable="false" sap:deletable="false" sap:pageable="false" sap:content-version="1"/>
+                <EntitySet Name="ZfmSaveDefectSet" EntityType="ZDOM_SIPMECA_SRV_01.ZfmSaveDefect" sap:creatable="false" sap:updatable="false" sap:deletable="false" sap:pageable="false" sap:content-version="1"/>
+                <EntitySet Name="et_returnSet" EntityType="ZDOM_SIPMECA_SRV_01.et_return" sap:creatable="false" sap:updatable="false" sap:deletable="false" sap:pageable="false" sap:content-version="1"/>
+                <EntitySet Name="ZshReasonSet" EntityType="ZDOM_SIPMECA_SRV_01.ZshReason" sap:creatable="false" sap:updatable="false" sap:deletable="false" sap:pageable="false" sap:content-version="1"/>
+                <AssociationSet Name="SaveDefectReturnSet" Association="ZDOM_SIPMECA_SRV_01.SaveDefectReturn" sap:creatable="false" sap:updatable="false" sap:deletable="false" sap:content-version="1">
+                    <End EntitySet="ZfmSaveDefectSet" Role="FromRole_SaveDefectReturn"/>
+                    <End EntitySet="et_returnSet" Role="ToRole_SaveDefectReturn"/>
+                </AssociationSet>
+                <AssociationSet Name="SaveDefectBomItemSet" Association="ZDOM_SIPMECA_SRV_01.SaveDefectBomItem" sap:creatable="false" sap:updatable="false" sap:deletable="false" sap:content-version="1">
+                    <End EntitySet="ZfmSaveDefectSet" Role="FromRole_SaveDefectBomItem"/>
+                    <End EntitySet="ItBomItemSet" Role="ToRole_SaveDefectBomItem"/>
+                </AssociationSet>
+            </EntityContainer>
+            <Annotation Term="Core.SchemaVersion" String="1.0.0" xmlns="http://docs.oasis-open.org/odata/ns/edm"/>
+            <atom:link rel="self" href="https://vhhpwds4ci.sap.horseapps.tech:44300/sap/opu/odata/sap/ZDOM_SIPMECA_SRV_01/$metadata" xmlns:atom="http://www.w3.org/2005/Atom"/>
+            <atom:link rel="latest-version" href="https://vhhpwds4ci.sap.horseapps.tech:44300/sap/opu/odata/sap/ZDOM_SIPMECA_SRV_01/$metadata" xmlns:atom="http://www.w3.org/2005/Atom"/>
+        </Schema>
+    </edmx:DataServices>
+</edmx:Edmx>

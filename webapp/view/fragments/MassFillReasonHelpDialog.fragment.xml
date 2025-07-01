@@ -1,0 +1,48 @@
+<core:FragmentDefinition
+    xmlns:m="sap.m"
+    xmlns:core="sap.ui.core"
+    xmlns="sap.ui.comp.valuehelpdialog"
+    xmlns:fb="sap.ui.comp.filterbar"
+>
+    <ValueHelpDialog
+        title="{i18n>reason}"
+        ok=".onValueHelpOkPressMassFill"
+        cancel=".onExitMassFillDialog"
+        key="Reason"
+        descriptionKey="Name"
+        supportMultiselect="false"
+    >
+        <filterBar>
+            <fb:FilterBar search="onFilterBarSearchMassFill">
+                <fb:filterGroupItems>
+                    <fb:FilterGroupItem
+                        groupName="__$INTERNAL$"
+                        name="Reason"
+                        label="{i18n>reason}"
+                        visibleInFilterBar="true"
+                    >
+                        <fb:control>
+                            <m:Input
+                                name="Reason"
+                                submit="onSubmitMassFillFilters"
+                            />
+                        </fb:control>
+                    </fb:FilterGroupItem>
+                    <fb:FilterGroupItem
+                        groupName="__$INTERNAL$"
+                        name="Description"
+                        label="{i18n>description}"
+                        visibleInFilterBar="true"
+                    >
+                        <fb:control>
+                            <m:Input
+                                name="Description"
+                                submit="onSubmitMassFillFilters"
+                            />
+                        </fb:control>
+                    </fb:FilterGroupItem>
+                </fb:filterGroupItems>
+            </fb:FilterBar>
+        </filterBar>
+    </ValueHelpDialog>
+</core:FragmentDefinition>

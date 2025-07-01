@@ -1,0 +1,52 @@
+<core:FragmentDefinition
+    xmlns:m="sap.m"
+    xmlns:core="sap.ui.core"
+    xmlns="sap.ui.comp.valuehelpdialog"
+    xmlns:fb="sap.ui.comp.filterbar"
+>
+    <ValueHelpDialog
+        title="{i18n>costcenter}"
+        ok=".onValueHelpOkPressMassFill"
+        cancel=".onExitMassFillDialog"
+        key="CostCenter"
+        descriptionKey="Name"
+        supportMultiselect="false"
+    >
+        <filterBar>
+            <fb:FilterBar search="onFilterBarSearchMassFill">
+                <fb:filterGroupItems>
+                    <fb:FilterGroupItem
+                        groupName="__$INTERNAL$"
+                        name="CostCenter"
+                        label="{i18n>costcenter}"
+                        visibleInFilterBar="true"
+                    >
+                        <fb:control>
+                            <m:Input name="CostCenter" submit="onSubmitMassFillFilters"/>
+                        </fb:control>
+                    </fb:FilterGroupItem>
+                    <fb:FilterGroupItem
+                        groupName="__$INTERNAL$"
+                        name="ControllingArea"
+                        label="{i18n>controllingArea}"
+                        visibleInFilterBar="true"
+                    >
+                        <fb:control>
+                            <m:Input name="ControllingArea" submit="onSubmitMassFillFilters"/>
+                        </fb:control>
+                    </fb:FilterGroupItem>
+                    <fb:FilterGroupItem
+                        groupName="__$INTERNAL$"
+                        name="Name"
+                        label="{i18n>name}"
+                        visibleInFilterBar="true"
+                    >
+                        <fb:control>
+                            <m:Input name="Name" submit="onSubmitMassFillFilters"/>
+                        </fb:control>
+                    </fb:FilterGroupItem>
+                </fb:filterGroupItems>
+            </fb:FilterBar>
+        </filterBar>
+    </ValueHelpDialog>
+</core:FragmentDefinition>

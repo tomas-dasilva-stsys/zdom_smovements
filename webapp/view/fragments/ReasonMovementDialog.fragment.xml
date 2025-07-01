@@ -1,0 +1,21 @@
+<core:FragmentDefinition
+    xmlns="sap.m"
+    xmlns:core="sap.ui.core"
+>
+    <SelectDialog
+        id="mySelectDialog"
+        noDataText="No data"
+        title="{i18n>reasonTitle}"
+        items="{path: 'movementReasonData>/'}"
+        search=".onValueHelpSearch"
+        confirm=".onValueHelpClose"
+        cancel=".onValueHelpClose"
+    >
+        <StandardListItem
+            id="reasonItem"
+            type="Active"
+            title="{movementReasonData>Grund}"
+            description="{movementReasonData>Grtxt}"
+        />
+    </SelectDialog>
+</core:FragmentDefinition>

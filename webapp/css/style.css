@@ -1,0 +1,22 @@
+/* Enter your custom styles here */
+.alwaysScrollX {
+  overflow-x: scroll !important;
+  height: 300px; /* O la altura que tú quieras */
+  width: 100%;
+  position: relative;
+}
+
+.myFlexBoxClass {
+  position: relative;
+  width: 100%;
+
+}
+.fixedStyle {
+  position: sticky;
+}
+
+.myToolBarStyle {
+  position: fixed;
+  width: 100%;
+  top: 0;
+}

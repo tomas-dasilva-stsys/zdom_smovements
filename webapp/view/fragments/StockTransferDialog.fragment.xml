@@ -1,0 +1,56 @@
+<core:FragmentDefinition
+    xmlns="sap.m"
+    xmlns:core="sap.ui.core"
+>
+    <Dialog
+        id="idDialog"
+        title="Select Movement"
+        class="sapUiResponsiveContentPadding"
+        contentWidth="32%"
+    >
+        <Label
+            id="idMovementReason"
+            text="{i18n>movementReason}"
+            required="true"
+        />
+        <Input
+            id="reasonMovementInput"
+            valueHelpRequest="onValueHelpRequest"
+            showValueHelp="true"
+            required="true"
+            change="onValueChange"
+        />
+        <VBox direction="Column">
+            <RadioButtonGroup id="radioButtonsId">
+                <RadioButton
+                    id="stockToScrapId"
+                    text="{i18n>stockBlockedToScrapped}"
+                    select="toggleEnabledInput"
+                />
+                <RadioButton
+                    id="stockToFreeId"
+                    text="{i18n>stockBlockedToFree}"
+                    select="toggleEnabledInput"
+                />
+            </RadioButtonGroup>
+        </VBox>
+        <VBox
+            direction="Row"
+            justifyContent="End"
+        >
+            <Button
+                id="dialogStockTransferBtn"
+                text="{i18n>confirmBtn}"
+                type="Emphasized"
+                press="onPostMovement"
+            />
+            <Button
+                id="dialogStockTransferCancelBtn"
+                class="sapUiSmallMarginBegin"
+                type="Reject"
+                text="{i18n>cancelBtn}"
+                press="handleCloseDialog"
+            />
+        </VBox>
+    </Dialog>
+</core:FragmentDefinition>

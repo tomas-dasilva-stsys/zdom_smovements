@@ -1,0 +1,33 @@
+<core:FragmentDefinition
+    xmlns:m="sap.m"
+    xmlns:core="sap.ui.core"
+    xmlns:table="sap.ui.table"
+    xmlns="sap.ui.comp.valuehelpdialog"
+    xmlns:fb="sap.ui.comp.filterbar"
+>
+    <ValueHelpDialog
+        title="{i18n>zuser}"
+        ok=".onValueHelpOkPress"
+        cancel=".onExitDialog"
+        key="Zuser"
+        descriptionKey="Name"
+        supportMultiselect="false"
+    >
+        <filterBar>
+            <fb:FilterBar search="onFilterBarSearch">
+                <fb:filterGroupItems>
+                    <fb:FilterGroupItem
+                        groupName="__$INTERNAL$"
+                        name="Zuser"
+                        label="{i18n>zuser}"
+                        visibleInFilterBar="true"
+                    >
+                        <fb:control>
+                            <m:Input name="Zuser" submit="onSubmitFilter"/>
+                        </fb:control>
+                    </fb:FilterGroupItem>
+                </fb:filterGroupItems>
+            </fb:FilterBar>
+        </filterBar>
+    </ValueHelpDialog>
+</core:FragmentDefinition>

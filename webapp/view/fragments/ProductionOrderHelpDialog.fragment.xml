@@ -1,0 +1,53 @@
+<core:FragmentDefinition
+    xmlns:m="sap.m"
+    xmlns:core="sap.ui.core"
+    xmlns:table="sap.ui.table"
+    xmlns="sap.ui.comp.valuehelpdialog"
+    xmlns:fb="sap.ui.comp.filterbar"
+>
+    <ValueHelpDialog
+        title="{i18n>productionOrderSelection}"
+        ok=".onValueHelpOkPress"
+        cancel=".onExitDialog"
+        key="ProductionOrder"
+        descriptionKey="Name"
+        supportMultiselect="false"
+    >
+        <filterBar>
+            <fb:FilterBar search="onFilterBarSearch">
+                <fb:filterGroupItems>
+                    <fb:FilterGroupItem
+                        groupName="__$INTERNAL$"
+                        name="ProductionOrder"
+                        label="{i18n>productionOrder}"
+                        visibleInFilterBar="true"
+                    >
+                        <fb:control>
+                            <m:Input name="ProductionOrder" submit="onSubmitFilter"/>
+                        </fb:control>
+                    </fb:FilterGroupItem>
+                    <fb:FilterGroupItem
+                        groupName="__$INTERNAL$"
+                        name="Material"
+                        label="{i18n>material}"
+                        visibleInFilterBar="true"
+                    >
+                        <fb:control>
+                            <m:Input name="Material" submit="onSubmitFilter"/>
+                        </fb:control>
+                    </fb:FilterGroupItem>
+                    <fb:FilterGroupItem
+                        groupName="__$INTERNAL$"
+                        name="OrderType"
+                        label="{i18n>orderType}"
+                        visibleInFilterBar="true"
+                    >
+                        <fb:control>
+                            <m:Input name="OrderType" submit="onSubmitFilter"/>
+                        </fb:control>
+                    </fb:FilterGroupItem>
+                </fb:filterGroupItems>
+            </fb:FilterBar>
+        </filterBar>
+    </ValueHelpDialog>
+</core:FragmentDefinition>
