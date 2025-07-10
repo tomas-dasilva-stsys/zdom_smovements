@@ -30,6 +30,8 @@ sap.ui.define([
                     "Plant": "",
                     "StorageLocation": "",
                     "Zuser": "",
+                    "Equipment": "",
+                    "ReferenceNumber": "",
                 },
                 "Plant": [{
                     "label": "{i18n>plant}",

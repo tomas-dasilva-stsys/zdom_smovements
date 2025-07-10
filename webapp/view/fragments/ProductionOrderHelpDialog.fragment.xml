@@ -11,7 +11,7 @@
         cancel=".onExitDialog"
         key="ProductionOrder"
         descriptionKey="Name"
-        supportMultiselect="false"
+        supportMultiselect="true"
     >
         <filterBar>
             <fb:FilterBar search="onFilterBarSearch">

@@ -11,7 +11,6 @@
         cancel=".onExitDialog"
         key="WorkCenter"
         descriptionKey="Name"
-        supportMultiselect="false"
     >
         <filterBar>
             <fb:FilterBar search="onFilterBarSearch">
@@ -23,7 +22,10 @@
                         visibleInFilterBar="true"
                     >
                         <fb:control>
-                            <m:Input name="WorkCenter" submit="onSubmitFilter"/>
+                            <m:Input
+                                name="WorkCenter"
+                                submit="onSubmitFilter"
+                            />
                         </fb:control>
                     </fb:FilterGroupItem>
                     <fb:FilterGroupItem
@@ -33,7 +35,10 @@
                         visibleInFilterBar="true"
                     >
                         <fb:control>
-                            <m:Input name="Plant" submit="onSubmitFilter"/>
+                            <m:Input
+                                name="Plant"
+                                submit="onSubmitFilter"
+                            />
                         </fb:control>
                     </fb:FilterGroupItem>
                     <fb:FilterGroupItem
@@ -43,7 +48,10 @@
                         visibleInFilterBar="true"
                     >
                         <fb:control>
-                            <m:Input name="Description" submit="onSubmitFilter"/>
+                            <m:Input
+                                name="Description"
+                                submit="onSubmitFilter"
+                            />
                         </fb:control>
                     </fb:FilterGroupItem>
                 </fb:filterGroupItems>

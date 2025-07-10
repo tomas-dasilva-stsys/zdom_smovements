@@ -430,55 +430,55 @@ sap.ui.define([
                 // getting filters values
                 let dateFromValue = dateFrom.getValue();
                 let dateToValue = dateTo.getValue();
-                let prodOrderValue = productionOrder.getValue();
-                let prodOperationValue = prodOperation.getValue();
-                let zuserValue = zuser.getValue();
-                let materialValue = material.getValue();
-                let plantValue = plant.getValue();
-                let workCenterValue = workCenter.getValue();
-                let storageLocationValue = storageLocation.getValue();
-                let serialNumberValue = serialNumber.getValue();
-                let referenceNumberValue = referenceNumber.getValue();
-                let equipmentValue = equipment.getValue();
+                let prodOrderValues = productionOrder.getTokens().map(token => token.getKey());
+                let prodOperationValues = prodOperation.getTokens().map(token => token.getKey());
+                let zuserValues = zuser.getTokens().map(token => token.getKey());
+                let materialValues = material.getTokens().map(token => token.getKey());
+                let plantValues = plant.getTokens().map(token => token.getKey());
+                let workCenterValues = workCenter.getTokens().map(token => token.getKey());
+                let storageLocationValues = storageLocation.getTokens().map(token => token.getKey());
+                let serialNumberValues = serialNumber.getTokens().map(token => token.getKey());
+                let referenceNumberValues = referenceNumber.getTokens().map(token => token.getKey());
+                let equipmentValues = equipment.getTokens().map(token => token.getKey());
 
-                if (prodOrderValue) {
-                    this.setSmartFilters(mBindingParams, prodOrderValue, "ProductionOrder");
+                if (prodOrderValues.length > 0) {
+                    this.setSmartFilters(mBindingParams, prodOrderValues, "ProductionOrder");
                 }
 
-                if (prodOperationValue) {
-                    this.setSmartFilters(mBindingParams, prodOperationValue, "ProductionOperation");
+                if (prodOperationValues.length > 0) {
+                    this.setSmartFilters(mBindingParams, prodOperationValues, "ProductionOperation");
                 }
 
-                if (zuserValue) {
-                    this.setSmartFilters(mBindingParams, zuserValue, "Zuser");
+                if (zuserValues.length > 0) {
+                    this.setSmartFilters(mBindingParams, zuserValues, "Zuser");
                 }
 
-                if (materialValue) {
-                    this.setSmartFilters(mBindingParams, materialValue, "Material");
+                if (materialValues.length > 0) {
+                    this.setSmartFilters(mBindingParams, materialValues, "Material");
                 }
 
-                if (plantValue) {
-                    this.setSmartFilters(mBindingParams, plantValue, "Plant");
+                if (plantValues.length > 0) {
+                    this.setSmartFilters(mBindingParams, plantValues, "Plant");
                 }
 
-                if (workCenterValue) {
-                    this.setSmartFilters(mBindingParams, workCenterValue, "WorkCenter");
+                if (workCenterValues.length > 0) {
+                    this.setSmartFilters(mBindingParams, workCenterValues, "WorkCenter");
                 }
 
-                if (storageLocationValue) {
-                    this.setSmartFilters(mBindingParams, storageLocationValue, "StorageLocation");
+                if (storageLocationValues.length > 0) {
+                    this.setSmartFilters(mBindingParams, storageLocationValues, "StorageLocation");
                 }
 
-                if (serialNumberValue) {
-                    this.setSmartFilters(mBindingParams, serialNumberValue, "SerialNumber");
+                if (serialNumberValues.length > 0) {
+                    this.setSmartFilters(mBindingParams, serialNumberValues, "SerialNumber");
                 }
 
-                if (referenceNumberValue) {
-                    this.setSmartFilters(mBindingParams, referenceNumberValue, "ReferenceNumber");
+                if (referenceNumberValues.length > 0) {
+                    this.setSmartFilters(mBindingParams, referenceNumberValues, "ReferenceNumber");
                 }
 
-                if (equipmentValue) {
-                    this.setSmartFilters(mBindingParams, equipmentValue, "Equipment");
+                if (equipmentValues.length > 0) {
+                    this.setSmartFilters(mBindingParams, equipmentValues, "Equipment");
                 }
 
                 if (dateFromValue && dateToValue) {
@@ -617,21 +617,38 @@ sap.ui.define([
                 });
             },
 
-            setSmartFilters: function (mBindingParams, filterValue, filterKey) {
-                if (filterValue.startsWith('*') && filterValue.endsWith('*')) {
-                    let currentFilter = new Filter(filterKey, FilterOperator.Contains, filterValue.slice(1, -1));
-                    mBindingParams.filters.push(currentFilter);
-                }
-                else if (filterValue.startsWith('*')) {
-                    let currentFilter = new Filter(filterKey, FilterOperator.EndsWith, filterValue.slice(1));
-                    mBindingParams.filters.push(currentFilter);
-                } else if (filterValue.endsWith('*')) {
-                    let currentFilter = new Filter(filterKey, FilterOperator.StartsWith, filterValue.slice(0, -1));
-                    mBindingParams.filters.push(currentFilter);
-                } else {
-                    let currentFilter = new Filter(filterKey, FilterOperator.Contains, filterValue);
-                    mBindingParams.filters.push(currentFilter);
-                }
+            setSmartFilters: function (mBindingParams, filterValues, filterKey) {
+                // if (filterValue.startsWith('*') && filterValue.endsWith('*')) {
+                //     let currentFilter = new Filter(filterKey, FilterOperator.Contains, filterValue.slice(1, -1));
+                //     mBindingParams.filters.push(currentFilter);
+                // }
+                // else if (filterValue.startsWith('*')) {
+                //     let currentFilter = new Filter(filterKey, FilterOperator.EndsWith, filterValue.slice(1));
+                //     mBindingParams.filters.push(currentFilter);
+                // } else if (filterValue.endsWith('*')) {
+                //     let currentFilter = new Filter(filterKey, FilterOperator.StartsWith, filterValue.slice(0, -1));
+                //     mBindingParams.filters.push(currentFilter);
+                // } else {
+                //     let currentFilter = new Filter(filterKey, FilterOperator.Contains, filterValue);
+                //     mBindingParams.filters.push(currentFilter);
+                // }
+
+                let aFilters = filterValues.map(function (filterValue) {
+                    let sValue = filterValue.trim();
+
+                    if (sValue.startsWith("*") && sValue.endsWith("*")) {
+                        return new sap.ui.model.Filter(filterKey, sap.ui.model.FilterOperator.Contains, sValue.slice(1, -1));
+                    } else if (sValue.startsWith("*")) {
+                        return new sap.ui.model.Filter(filterKey, sap.ui.model.FilterOperator.EndsWith, sValue.slice(1));
+                    } else if (sValue.endsWith("*")) {
+                        return new sap.ui.model.Filter(filterKey, sap.ui.model.FilterOperator.StartsWith, sValue.slice(0, -1));
+                    } else {
+                        return new sap.ui.model.Filter(filterKey, sap.ui.model.FilterOperator.Contains, sValue);
+                    }
+                });
+
+                let oCombinedFilter = new sap.ui.model.Filter(aFilters, false);
+                mBindingParams.filters.push(oCombinedFilter);
             },
 
             clearNotificationsPanel: function () {
@@ -1182,6 +1199,13 @@ sap.ui.define([
                         oTable.setModel(currentJsonModel, "columns");
                         // oTable.getExtension()[0].getContent()[2].setVisible(false);
 
+                        const tableType = oTable.getMetadata().getName();
+                        if (tableType === "sap.ui.table.Table") {
+                            oTable.setSelectionMode(sap.ui.table.SelectionMode.MultiToggle);
+                        } else if (tableType === "sap.m.Table") {
+                            oTable.setMode("MultiSelect");
+                        }
+
                         if (oTable.bindRows) {
                             oTable.bindAggregation("rows", {
                                 path: currSpath.path,
@@ -1285,24 +1309,29 @@ sap.ui.define([
 
                 let currValue = oEvent.getParameter("tokens")[0].getKey();
                 let rowSelected = oTable.getItems()[currRowPosition];
+                let tokensSelected = oEvent.getParameter('tokens').map(token => ({ key: token.getKey(), text: token.getText() }));
 
-                if (inputId === 'ProductionOrder') {
-                    let currMaterial = oEvent.getParameter("tokens")[0].getCustomData()[0].getValue().Material;
-                    this.byId(inputId).setValue(currValue);
-                    // this.byId('Material').setValue(currMaterial);
-                    this.onExitDialog();
-                    return;
-                }
+
+                // if (inputId === 'ProductionOrder') {
+                //     // let productionOrTokens = AppJsonModel.getProperty('/FilterValues').ProductionOrder;
+                //     AppJsonModel.setInnerProperty('/FilterValues', 'ProductionOrder', tokensSelected);
+                //     let currMaterial = oEvent.getParameter("tokens")[0].getCustomData()[0].getValue().Material;
+                //     // this.byId(inputId).setValue(currValue);
+                //     // this.byId(inputId).setTokens(tokensSelected);
+                //     // this.byId('Material').setValue(currMaterial);
+                //     this.onExitDialog();
+                //     return;
+                // }
 
                 if (inputId !== 'Reason' && inputId !== 'CostCenter') {
-                    this.byId(inputId).setValue(currValue);
+                    AppJsonModel.setInnerProperty('/FilterValues', inputId, tokensSelected);
                     this.onExitDialog();
                     return;
                 }
 
                 rowSelected.getCells().filter(cell => cell.getId().includes(inputId))[0].setValue(currValue);
                 rowSelected.getCells().filter(cell => cell.getId().includes(inputId))[0].setValueState("None");
-                
+
                 this.onExitDialog();
             },
 
@@ -1599,8 +1628,44 @@ sap.ui.define([
             },
 
             onChange: function (oEvent) {
+                let currentId = oEvent.getSource().getId().split('-').pop();
                 let mayus = oEvent.getSource().getValue().toUpperCase();
-                oEvent.getSource().setValue(mayus);
+                
+                if (!mayus.trim()) return;
+
+                let token = { key: mayus, text: mayus };
+                this.byId(currentId).setValue('');
+
+                let currentValues = AppJsonModel.getProperty('/FilterValues')[`${currentId}`];
+                if (currentValues) {
+                    currentValues.push(token)
+                    AppJsonModel.setInnerProperty('/FilterValues', currentId, currentValues);
+                    return
+                }
+                AppJsonModel.setInnerProperty('/FilterValues', currentId, [token]);
+            },
+
+            onTokenUpdate: function(oEvent) {
+                let currId = oEvent.getSource().getId().split('-').pop();
+                let currentTokens = AppJsonModel.getProperty('/FilterValues')[`${currId}`];
+                let removedToken = oEvent.getParameter('removedTokens')[0].getKey();
+                let tokensUpdated = currentTokens.filter(token => token.key !== removedToken);
+                AppJsonModel.setInnerProperty('/FilterValues', currId, tokensUpdated);
+            },
+
+            onMultiInputSubmit: function (oEvent) {
+                let currentId = oEvent.getSource().getId().split('-').pop();
+                let mayus = oEvent.getSource().getValue().toUpperCase();
+
+                if (!mayus.trim()) return;
+
+                let token = { key: mayus, text: mayus };
+                this.byId(currentId).setValue('');
+
+                let currentValues = AppJsonModel.getProperty('/FilterValues')[`${currentId}`];
+                currentValues.push(token);
+
+                currentValues ? AppJsonModel.setInnerProperty('/FilterValues', currentId, [...currentValues, token]) : AppJsonModel.setInnerProperty('/FilterValues', currentId, [token]);
             },
 
             onReasonChange: function (oEvent) {

@@ -2,6 +2,7 @@
     controllerName="zdomscrapmovements.controller.MainView"
     xmlns:smarttable="sap.ui.comp.smarttable"
     xmlns:smartfilterbar="sap.ui.comp.smartfilterbar"
+    xmlns:smartMultiInput="sap.ui.comp.smartmultiinput"
     xmlns:core="sap.ui.core"
     xmlns:mvc="sap.ui.core.mvc"
     xmlns:table="sap.ui.table"
@@ -27,12 +28,22 @@
                     hasValueHelpDialog="true"
                 >
                     <smartfilterbar:customControl>
-                        <Input
+                        <MultiInput
                             id="ProductionOrder"
                             showValueHelp="true"
                             valueHelpRequest="onValueHelpRequest"
-                            value="{AppJsonModel>/FilterValues/ProductionOrder}"
-                        />
+                            change="onChange"
+                            tokenUpdate="onTokenUpdate"
+                            tokens="{AppJsonModel>/FilterValues/ProductionOrder}"
+                            width="100%"
+                        >
+                            <tokens>
+                                <Token
+                                    key="{AppJsonModel>key}"
+                                    text="{AppJsonModel>text}"
+                                />
+                            </tokens>
+                        </MultiInput>
                     </smartfilterbar:customControl>
                 </smartfilterbar:ControlConfiguration>
                 <smartfilterbar:ControlConfiguration
@@ -43,12 +54,28 @@
                     hasValueHelpDialog="true"
                 >
                     <smartfilterbar:customControl>
-                        <Input
+                        <!-- <Input
                             id="ProductOrderOperation"
                             showValueHelp="true"
                             valueHelpRequest="onValueHelpRequest"
                             value="{AppJsonModel>/FilterValues/ProductOrderOperation}"
-                        />
+                        /> -->
+                        <MultiInput
+                            id="ProductOrderOperation"
+                            showValueHelp="true"
+                            valueHelpRequest="onValueHelpRequest"
+                            tokenUpdate="onTokenUpdate"
+                            change="onChange"
+                            tokens="{AppJsonModel>/FilterValues/ProductOrderOperation}"
+                            width="100%"
+                        >
+                            <tokens>
+                                <Token
+                                    key="{AppJsonModel>key}"
+                                    text="{AppJsonModel>text}"
+                                />
+                            </tokens>
+                        </MultiInput>
                     </smartfilterbar:customControl>
                 </smartfilterbar:ControlConfiguration>
                 <smartfilterbar:ControlConfiguration
@@ -58,13 +85,30 @@
                     hasValueHelpDialog="true"
                 >
                     <smartfilterbar:customControl>
-                        <Input
+                        <!-- <Input
                             id="Plant"
                             showValueHelp="true"
                             change="onChange"
                             valueHelpRequest="onValueHelpRequest"
                             value="{AppJsonModel>/FilterValues/Plant}"
-                        />
+                        /> -->
+
+                        <MultiInput
+                            id="Plant"
+                            showValueHelp="true"
+                            valueHelpRequest="onValueHelpRequest"
+                            tokens="{AppJsonModel>/FilterValues/Plant}"
+                            tokenUpdate="onTokenUpdate"
+                            change="onChange"
+                            width="100%"
+                        >
+                            <tokens>
+                                <Token
+                                    key="{AppJsonModel>key}"
+                                    text="{AppJsonModel>text}"
+                                />
+                            </tokens>
+                        </MultiInput>
                     </smartfilterbar:customControl>
                 </smartfilterbar:ControlConfiguration>
                 <smartfilterbar:ControlConfiguration
@@ -74,13 +118,30 @@
                     hasValueHelpDialog="true"
                 >
                     <smartfilterbar:customControl>
-                        <Input
+                        <!-- <Input
                             id="WorkCenter"
                             showValueHelp="true"
                             valueHelpRequest="onValueHelpRequest"
                             change="onChange"
                             value="{AppJsonModel>/FilterValues/WorkCenter}"
-                        />
+                        /> -->
+
+                        <MultiInput
+                            id="WorkCenter"
+                            showValueHelp="true"
+                            valueHelpRequest="onValueHelpRequest"
+                            tokens="{AppJsonModel>/FilterValues/WorkCenter}"
+                            tokenUpdate="onTokenUpdate"
+                            change="onChange"
+                            width="100%"
+                        >
+                            <tokens>
+                                <Token
+                                    key="{AppJsonModel>key}"
+                                    text="{AppJsonModel>text}"
+                                />
+                            </tokens>
+                        </MultiInput>
                     </smartfilterbar:customControl>
                 </smartfilterbar:ControlConfiguration>
                 <smartfilterbar:ControlConfiguration
@@ -90,12 +151,29 @@
                     hasValueHelpDialog="true"
                 >
                     <smartfilterbar:customControl>
-                        <Input
+                        <!-- <Input
                             id="StorageLocation"
                             showValueHelp="true"
                             valueHelpRequest="onValueHelpRequest"
                             value="{AppJsonModel>/FilterValues/StorageLocation}"
-                        />
+                        /> -->
+
+                        <MultiInput
+                            id="StorageLocation"
+                            showValueHelp="true"
+                            valueHelpRequest="onValueHelpRequest"
+                            tokens="{AppJsonModel>/FilterValues/StorageLocation}"
+                            tokenUpdate="onTokenUpdate"
+                            change="onChange"
+                            width="100%"
+                        >
+                            <tokens>
+                                <Token
+                                    key="{AppJsonModel>key}"
+                                    text="{AppJsonModel>text}"
+                                />
+                            </tokens>
+                        </MultiInput>
                     </smartfilterbar:customControl>
                 </smartfilterbar:ControlConfiguration>
                 <smartfilterbar:ControlConfiguration
@@ -106,13 +184,30 @@
                     hasValueHelpDialog="true"
                 >
                     <smartfilterbar:customControl>
-                        <Input
+                        <!-- <Input
                             id="Material"
                             showValueHelp="true"
                             change="onChange"
                             valueHelpRequest="onValueHelpRequest"
                             value="{AppJsonModel>/FilterValues/Material}"
-                        />
+                        /> -->
+
+                        <MultiInput
+                            id="Material"
+                            showValueHelp="true"
+                            valueHelpRequest="onValueHelpRequest"
+                            tokens="{AppJsonModel>/FilterValues/Material}"
+                            tokenUpdate="onTokenUpdate"
+                            change="onChange"
+                            width="100%"
+                        >
+                            <tokens>
+                                <Token
+                                    key="{AppJsonModel>key}"
+                                    text="{AppJsonModel>text}"
+                                />
+                            </tokens>
+                        </MultiInput>
                     </smartfilterbar:customControl>
                 </smartfilterbar:ControlConfiguration>
                 <smartfilterbar:ControlConfiguration
@@ -123,12 +218,29 @@
                     hasValueHelpDialog="true"
                 >
                     <smartfilterbar:customControl>
-                        <Input
+                        <!-- <Input
                             id="SerialNumber"
                             showValueHelp="true"
                             valueHelpRequest="onValueHelpRequest"
                             value="{AppJsonModel>/FilterValues/SerialNumber}"
-                        />
+                        /> -->
+
+                        <MultiInput
+                            id="SerialNumber"
+                            showValueHelp="true"
+                            valueHelpRequest="onValueHelpRequest"
+                            tokens="{AppJsonModel>/FilterValues/SerialNumber}"
+                            tokenUpdate="onTokenUpdate"
+                            change="onChange"
+                            width="100%"
+                        >
+                            <tokens>
+                                <Token
+                                    key="{AppJsonModel>key}"
+                                    text="{AppJsonModel>text}"
+                                />
+                            </tokens>
+                        </MultiInput>
                     </smartfilterbar:customControl>
                 </smartfilterbar:ControlConfiguration>
                 <smartfilterbar:ControlConfiguration
@@ -139,13 +251,31 @@
                     hasValueHelpDialog="true"
                 >
                     <smartfilterbar:customControl>
-                        <Input
+                        <!-- <Input
                             id="Zuser"
                             showValueHelp="true"
                             change="onChange"
                             valueHelpRequest="onValueHelpRequest"
                             value="{AppJsonModel>/FilterValues/Zuser}"
-                        />
+                        /> -->
+
+                        <MultiInput
+                            id="Zuser"
+                            showValueHelp="true"
+                            valueHelpRequest="onValueHelpRequest"
+                            change="onChange"
+                            submit="onMultiInputSubmit"
+                            tokenUpdate="onTokenUpdate"
+                            tokens="{AppJsonModel>/FilterValues/Zuser}"
+                            width="100%"
+                        >
+                            <tokens>
+                                <Token
+                                    key="{AppJsonModel>key}"
+                                    text="{AppJsonModel>text}"
+                                />
+                            </tokens>
+                        </MultiInput>
                     </smartfilterbar:customControl>
                 </smartfilterbar:ControlConfiguration>
                 <smartfilterbar:ControlConfiguration
@@ -154,11 +284,28 @@
                     visibleInAdvancedArea="true"
                 >
                     <smartfilterbar:customControl>
-                        <Input
+                        <!-- <Input
                             id="ReferenceNumber"
                             showValueHelp="true"
                             valueHelpRequest="onValueHelpRequest"
-                        />
+                        /> -->
+
+                        <MultiInput
+                            id="ReferenceNumber"
+                            showValueHelp="true"
+                            valueHelpRequest="onValueHelpRequest"
+                            tokens="{AppJsonModel>/FilterValues/ReferenceNumber}"
+                            tokenUpdate="onTokenUpdate"
+                            change="onChange"
+                            width="100%"
+                        >
+                            <tokens>
+                                <Token
+                                    key="{AppJsonModel>key}"
+                                    text="{AppJsonModel>text}"
+                                />
+                            </tokens>
+                        </MultiInput>
                     </smartfilterbar:customControl>
                 </smartfilterbar:ControlConfiguration>
                 <smartfilterbar:ControlConfiguration
@@ -167,11 +314,27 @@
                     visibleInAdvancedArea="true"
                 >
                     <smartfilterbar:customControl>
-                        <Input
+                        <!-- <Input
                             id="Equipment"
                             showValueHelp="true"
                             valueHelpRequest="onValueHelpRequest"
-                        />
+                        /> -->
+                        <MultiInput
+                            id="Equipment"
+                            showValueHelp="true"
+                            valueHelpRequest="onValueHelpRequest"
+                            tokens="{AppJsonModel>/FilterValues/Equipment}"
+                            tokenUpdate="onTokenUpdate"
+                            change="onChange"
+                            width="100%"
+                        >
+                            <tokens>
+                                <Token
+                                    key="{AppJsonModel>key}"
+                                    text="{AppJsonModel>text}"
+                                />
+                            </tokens>
+                        </MultiInput>
                     </smartfilterbar:customControl>
                 </smartfilterbar:ControlConfiguration>
                 <smartfilterbar:ControlConfiguration

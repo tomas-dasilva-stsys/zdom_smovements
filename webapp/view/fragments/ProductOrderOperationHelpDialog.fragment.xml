@@ -11,7 +11,6 @@
         cancel=".onExitDialog"
         key="ProductionOperation"
         descriptionKey="Name"
-        supportMultiselect="false"
     >
         <filterBar>
             <fb:FilterBar search="onFilterBarSearch">
