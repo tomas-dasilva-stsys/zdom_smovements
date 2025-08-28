@@ -377,10 +377,8 @@
                 header="{i18n>header}"
                 smartFilterId="smartFilterBar"
                 entitySet="ScrapMovements"
-                initiallyVisibleFields="BlockedQuantity,ScrapQuantity,FreeQuantity,Reason,CostCenter,ProductionOrder,ProductionOperation,Zuser,Component,Plant,WorkCenter,StorageLocation,DateFrom,Time,SerialNumber,Element,Cause,RepairCode,Equipment,EquipmentDescription,DNIEquipment"
+                initiallyVisibleFields="BlockedQuantity,ScrapQuantity,FreeQuantity,Reason,CostCenter,ProductionOrder,ProductionOperation,Zuser,Component,Plant,WorkCenter,StorageLocation,DateFrom,SerialNumber,Element,Cause,RepairCode,Equipment,EquipmentDescription,DNIEquipment"
                 requestAtLeastFields="ProductionOrder,ProductionOperation,Charg,Component,ItemNumber,StorageLocation,NotificationType,NotificationNumber,SerialNumber,UnitOfMeasure,Plant,ReserveNumber,Quantity,Material,BomNumber,ReferenceNumber,Equipment,EquipmentDescription,DNIEquipment"
-                showRowCount="true"
-                useTablePersonalisation="true"
                 height="100%"
                 persistencyKey="SmartTable_Explored"
                 beforeRebindTable="beforeRebind"
@@ -487,6 +485,28 @@
                                 text="{/#ScrapMovementsType/CostCenter/@sap:label}"
                             />
                         </Column>
+                        <Column width="100px">
+                            <customData>
+                                <core:CustomData
+                                    key="p13nData"
+                                    value='\{"columnKey": "DateFrom", "leadingProperty": "DateFrom"}'
+                                />
+                            </customData>
+                            <Text
+                                text="{/#ScrapMovementsType/DateFrom/@sap:label}"
+                            />
+                        </Column>
+                        <Column width="100px">
+                            <customData>
+                                <core:CustomData
+                                    key="p13nData"
+                                    value='\{"columnKey": "Time", "leadingProperty": "Time"}'
+                                />
+                            </customData>
+                            <Text
+                                text="{/#ScrapMovementsType/Time/@sap:label}"
+                            />
+                        </Column>
                     </columns>
 
                     <items>
@@ -538,6 +558,16 @@
                                     valueHelpRequest="onValueHelpRequestInputsTable"
                                     valueStateText="{i18n>costCenterRequired}"
                                     change="onCostCenterChange"
+                                />
+                            </cells>
+                            <cells>
+                                <Text
+                                    text="{path: 'DateFrom', formatter: '.formatter.formatDatePortugal'}"
+                                />
+                            </cells>
+                            <cells>
+                                <Text
+                                    text="{path: 'Time', formatter: '.formatter.formatEdmTime'}"
                                 />
                             </cells>
                         </ColumnListItem>

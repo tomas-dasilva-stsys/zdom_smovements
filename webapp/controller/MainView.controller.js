@@ -10,6 +10,7 @@ sap.ui.define([
     "zdomscrapmovements/services/TransferService",
     "zdomscrapmovements/services/MatchcodesService",
     "sap/m/MessageBox",
+    "zdomscrapmovements/model/Formatter",
 ],
     function (Controller,
         JSONModel,
@@ -21,7 +22,8 @@ sap.ui.define([
         AppJsonModel,
         TransferService,
         MatchcodesService,
-        MessageBox) {
+        MessageBox,
+        Formatter) {
         "use strict";
         let inputId;
         let currRowPosition;
@@ -44,6 +46,7 @@ sap.ui.define([
 
         return Controller.extend("zdomscrapmovements.controller.MainView", {
             oFragments: {},
+            formatter: Formatter,
             oVariants: {
                 "": {
                     "ProductionOrder": "",
@@ -1630,7 +1633,7 @@ sap.ui.define([
             onChange: function (oEvent) {
                 let currentId = oEvent.getSource().getId().split('-').pop();
                 let mayus = oEvent.getSource().getValue().toUpperCase();
-                
+
                 if (!mayus.trim()) return;
 
                 let token = { key: mayus, text: mayus };
@@ -1645,7 +1648,7 @@ sap.ui.define([
                 AppJsonModel.setInnerProperty('/FilterValues', currentId, [token]);
             },
 
-            onTokenUpdate: function(oEvent) {
+            onTokenUpdate: function (oEvent) {
                 let currId = oEvent.getSource().getId().split('-').pop();
                 let currentTokens = AppJsonModel.getProperty('/FilterValues')[`${currId}`];
                 let removedToken = oEvent.getParameter('removedTokens')[0].getKey();
