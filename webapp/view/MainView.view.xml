@@ -377,7 +377,7 @@
                 header="{i18n>header}"
                 smartFilterId="smartFilterBar"
                 entitySet="ScrapMovements"
-                initiallyVisibleFields="BlockedQuantity,ScrapQuantity,FreeQuantity,Reason,CostCenter,ProductionOrder,ProductionOperation,Zuser,Component,Plant,WorkCenter,StorageLocation,DateFrom,SerialNumber,Element,Cause,RepairCode,Equipment,EquipmentDescription,DNIEquipment"
+                initiallyVisibleFields="BlockedQuantity,ScrapQuantity,FreeQuantity,Reason,CostCenter,ProductionOrder,ProductionOperation,Time,Zuser,Component,Plant,WorkCenter,StorageLocation,DateFrom,SerialNumber,Element,Cause,RepairCode,Equipment,EquipmentDescription,DNIEquipment"
                 requestAtLeastFields="ProductionOrder,ProductionOperation,Charg,Component,ItemNumber,StorageLocation,NotificationType,NotificationNumber,SerialNumber,UnitOfMeasure,Plant,ReserveNumber,Quantity,Material,BomNumber,ReferenceNumber,Equipment,EquipmentDescription,DNIEquipment"
                 height="100%"
                 persistencyKey="SmartTable_Explored"
@@ -446,7 +446,7 @@
                                 />
                             </customData>
                             <Text
-                                text="{/#ScrapMovementsType/ScrapQuantity/@sap:label}"
+                                text="{i18n>scrapQuantity}"
                             />
                         </Column>
 
@@ -562,12 +562,12 @@
                             </cells>
                             <cells>
                                 <Text
-                                    text="{path: 'DateFrom', formatter: '.formatter.formatDatePortugal'}"
+                                    text="{path: 'DateFrom', formatter: '.formatter.formatDateByLocale'}"
                                 />
                             </cells>
                             <cells>
                                 <Text
-                                    text="{path: 'Time', formatter: '.formatter.formatEdmTime'}"
+                                    text="{path: 'Time', formatter: '.formatter.formatEdmTimeByLocale'}"
                                 />
                             </cells>
                         </ColumnListItem>

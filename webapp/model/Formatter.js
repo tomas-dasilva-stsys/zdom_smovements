@@ -1,43 +1,71 @@
 sap.ui.define([], function () {
     "use strict";
 
+    const mLocaleToTZ = {
+        "pt-PT": "Europe/Lisbon",
+        "en-US": "Europe/Lisbon",
+        "es-ES": "Europe/Madrid",
+    };
+
+    function getTimeZoneForLocale(sLocale) {
+        // Si viene con región, lo buscamos directo
+        if (mLocaleToTZ[sLocale]) {
+            return mLocaleToTZ[sLocale];
+        }
+
+        // Si solo viene idioma (ej: "es"), buscamos el default
+        let lang = sLocale.split("-")[0];
+        if (lang === "pt") return "Europe/Lisbon";
+        if (lang === "en") return "Europe/Lisbon";
+        if (lang === "es") return "Europe/Madrid";
+
+        // Si no se encuentra → UTC
+        return "UTC";
+    }
+
     return {
-        /**
-         * Convierte una fecha al timezone de Portugal (Europe/Lisbon)
-         * @param {string|Date} sDate Fecha proveniente del modelo
-         * @returns {string} Fecha formateada para mostrar
-         */
-        formatDatePortugal: function (sDate) {
-            if (!sDate) {
-                return "";
-            }
+        formatDateByLocale: function (sDate) {
+            if (!sDate) return "";
 
             let oDate = new Date(sDate);
+            let sLocale = sap.ui.getCore().getConfiguration().getLanguage();
+            let sTimeZone = getTimeZoneForLocale(sLocale.toLowerCase());
 
-            let oFormatter = new Intl.DateTimeFormat("es-PT", {
-                timeZone: "Europe/Lisbon",
+            return new Intl.DateTimeFormat(sLocale, {
+                timeZone: sTimeZone,
                 year: "numeric",
                 month: "2-digit",
                 day: "2-digit",
-            });
-
-            return oFormatter.format(oDate);
+            }).format(oDate);
         },
 
-        /**
-        * Convierte un string ISO 8601 duration (ej: PT12H34M42S) a formato hh:mm:ss AM/PM
-        * @param {string} sDuration Cadena en formato ISO duration
-        * @returns {string} Hora formateada con AM/PM
-        */
-        formatEdmTime: function (vMs) {
+        formatEdmTimeByLocale: function (vMs) {
             if (vMs == null || vMs === "") {
                 return "";
             }
 
-            let ms = vMs.ms;
+            let ms = typeof vMs === "object" ? vMs.ms : vMs;
             if (isNaN(ms)) {
                 return vMs;
             }
+
+            // Crear fecha en UTC
+            // let oDate = new Date(ms);
+
+            // Detectar locale
+            // let sLocale = sap.ui.getCore().getConfiguration().getLanguage();
+            // let sTimeZone = sap.ui.getCore().getConfiguration().getTimezone()
+
+            // Formatear según timezone
+            // let formatter = new Intl.DateTimeFormat(sLocale, {
+            //     timeZone: sTimeZone,
+            //     hour: "2-digit",
+            //     minute: "2-digit",
+            //     second: "2-digit",
+            //     hour12: false
+            // });
+
+            // return formatter.format(oDate);
 
             // Pasar ms a horas, minutos, segundos
             let totalSeconds = Math.floor(ms / 1000);
@@ -45,19 +73,11 @@ sap.ui.define([], function () {
             let minutes = Math.floor((totalSeconds % 3600) / 60);
             let seconds = totalSeconds % 60;
 
-            // AM/PM
-            let period = hours >= 12 ? "PM" : "AM";
-
-            let displayHours = hours % 12;
-            if (displayHours === 0) {
-                displayHours = 12;
-            }
-
-            let hh = displayHours.toString().padStart(2, "0");
+            let hh = hours.toString().padStart(2, "0");
             let mm = minutes.toString().padStart(2, "0");
             let ss = seconds.toString().padStart(2, "0");
 
-            return `${hh}:${mm}:${ss} ${period}`;
+            return `${hh}:${mm}:${ss}`;
         }
     };
 });
