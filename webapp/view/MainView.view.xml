@@ -2,7 +2,6 @@
     controllerName="zdomscrapmovements.controller.MainView"
     xmlns:smarttable="sap.ui.comp.smarttable"
     xmlns:smartfilterbar="sap.ui.comp.smartfilterbar"
-    xmlns:smartMultiInput="sap.ui.comp.smartmultiinput"
     xmlns:core="sap.ui.core"
     xmlns:mvc="sap.ui.core.mvc"
     xmlns:table="sap.ui.table"
@@ -284,12 +283,6 @@
                     visibleInAdvancedArea="true"
                 >
                     <smartfilterbar:customControl>
-                        <!-- <Input
-                            id="ReferenceNumber"
-                            showValueHelp="true"
-                            valueHelpRequest="onValueHelpRequest"
-                        /> -->
-
                         <MultiInput
                             id="ReferenceNumber"
                             showValueHelp="true"
@@ -368,6 +361,7 @@
             </smartfilterbar:controlConfiguration>
         </smartfilterbar:SmartFilterBar>
 
+        <!-- SAP.M.TABLE -->
         <ScrollContainer
             height="100%"
             vertical="true"
@@ -383,6 +377,8 @@
                 persistencyKey="SmartTable_Explored"
                 beforeRebindTable="beforeRebind"
                 enableAutoColumnWidth="true"
+                beforeExport="onSmartTableBeforeExport"
+                exportType="UI5Client"
             >
                 <smarttable:layoutData>
                     <FlexItemData
@@ -445,9 +441,7 @@
                                     value='\{"columnKey": "ScrapQuantity", "leadingProperty": "ScrapQuantity"}'
                                 />
                             </customData>
-                            <Text
-                                text="{i18n>scrapQuantity}"
-                            />
+                            <Text text="{i18n>scrapQuantity}" />
                         </Column>
 
                         <Column width="100px">
@@ -575,6 +569,154 @@
                 </Table>
             </smarttable:SmartTable>
         </ScrollContainer>
+
+        <!-- SAP.UI.TABLE -->
+        <!-- <smarttable:SmartTable
+            id="smartTable"
+            header="{i18n>header}"
+            smartFilterId="smartFilterBar"
+            entitySet="ScrapMovements"
+            initiallyVisibleFields="BlockedQuantity,ScrapQuantity,FreeQuantity,Reason,CostCenter,ProductionOrder,ProductionOperation,Time,Zuser,Component,Plant,WorkCenter,StorageLocation,DateFrom,SerialNumber,Element,Cause,RepairCode,Equipment,EquipmentDescription,DNIEquipment"
+            requestAtLeastFields="ProductionOrder,ProductionOperation,Charg,Component,ItemNumber,StorageLocation,NotificationType,NotificationNumber,SerialNumber,UnitOfMeasure,Plant,ReserveNumber,Quantity,Material,BomNumber,ReferenceNumber,Equipment,EquipmentDescription,DNIEquipment"
+            height="100%"
+            persistencyKey="SmartTable_Explored"
+            beforeRebindTable="beforeRebindUiTable"
+            enableAutoColumnWidth="true"
+            beforeExport="onSmartTableBeforeExport"
+        >
+            <smarttable:layoutData>
+                <FlexItemData
+                    growFactor="1"
+                    baseSize="0%"
+                />
+            </smarttable:layoutData>
+
+            <smarttable:customToolbar>
+                <Toolbar id="_IDGenToolbar">
+                    <ToolbarSpacer id="_IDGenToolbarSpacer" />
+                    <Button
+                        id="scrapToFreeBtn"
+                        type="Accept"
+                        icon="sap-icon://initiative"
+                        enabled="false"
+                        tooltip="{i18n>scrapToFree}"
+                        text="{i18n>scrapToFree}"
+                        press="onScrapToFreeButtonPressUiTable"
+                    />
+                    <Button
+                        id="MassFillFields"
+                        type="Transparent"
+                        icon="sap-icon://add-process"
+                        press="onValueHelpMassFillDialog"
+                        enabled="false"
+                        tooltip="{i18n>massFill}"
+                        text="{i18n>massFillText}"
+                    />
+                </Toolbar>
+            </smarttable:customToolbar>
+
+            <table:Table
+                id="idUiTable"
+                rows="{/ScrapMovements}"
+                fixedColumnCount="2"
+                rowMode="Auto"
+                rowSelectionChange="onSelectionChangeUiTable"
+            >
+                <table:Column width="100px">
+                    <Label
+                        text="{/#ScrapMovementsType/BlockedQuantity/@sap:label}"
+                    />
+                    <table:template>
+                        <Text
+                            id="blockedQty"
+                            text="{BlockedQuantity}"
+                        />
+                    </table:template>
+                </table:Column>
+
+                <table:Column width="100px">
+                    <Label text="{i18n>scrapQuantity}" />
+                    <table:template>
+                        <Input
+                            id="scrapQty"
+                            value="{BlockedQuantity}"
+                            type="Number"
+                            editable="true"
+                            change="onFormatValue"
+                            maxLength="5"
+                        />
+                    </table:template>
+                </table:Column>
+
+                <table:Column width="100px">
+                    <Label
+                        text="{/#ScrapMovementsType/FreeQuantity/@sap:label}"
+                    />
+                    <table:template>
+                        <Input
+                            id="freeQty"
+                            value="{FreeQuantity}"
+                            type="Number"
+                            editable="true"
+                            change="onFormatValue"
+                            maxLength="5"
+                        />
+                    </table:template>
+                </table:Column>
+
+                <table:Column width="150px">
+                    <Label text="{/#ScrapMovementsType/Reason/@sap:label}" />
+                    <table:template>
+                        <Input
+                            id="Reason"
+                            type="Number"
+                            editable="true"
+                            showValueHelp="true"
+                            valueHelpRequest="onValueHelpRequestInputsTable"
+                            valueStateText="{i18n>reasonRequired}"
+                            change="onReasonChange"
+                            maxLength="4"
+                        />
+                    </table:template>
+                </table:Column>
+
+                <table:Column width="150px">
+                    <Label
+                        text="{/#ScrapMovementsType/CostCenter/@sap:label}"
+                    />
+                    <table:template>
+                        <Input
+                            id="CostCenter"
+                            type="Text"
+                            editable="true"
+                            showValueHelp="true"
+                            valueHelpRequest="onValueHelpRequestInputsTable"
+                            valueStateText="{i18n>costCenterRequired}"
+                            change="onCostCenterChange"
+                        />
+                    </table:template>
+                </table:Column>
+
+                <table:Column width="100px">
+                    <Label text="{/#ScrapMovementsType/DateFrom/@sap:label}" />
+                    <table:template>
+                        <Text
+                            text="{path: 'DateFrom', formatter: '.formatter.formatDateByLocale'}"
+                        />
+                    </table:template>
+                </table:Column>
+
+                <table:Column width="100px">
+                    <Label text="{/#ScrapMovementsType/Time/@sap:label}" />
+                    <table:template>
+                        <Text
+                            text="{path: 'Time', formatter: '.formatter.formatEdmTimeByLocale'}"
+                        />
+                    </table:template>
+                </table:Column>
+            </table:Table>
+        </smarttable:SmartTable> -->
+
         <footer>
             <OverflowToolbar>
                 <Button

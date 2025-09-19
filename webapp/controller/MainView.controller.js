@@ -350,6 +350,21 @@ sap.ui.define([
                 }
             },
 
+            onSelectionChangeUiTable: function (oEvent) {
+                let oTable = oEvent.getSource(); // sap.ui.table.Table
+                let aSelectedIndices = oTable.getSelectedIndices(); // índices seleccionados
+
+                let stockMovementBtn = this.getView().byId("stockTransferBtn");
+                let massFillBtn = this.byId("MassFillFields");
+                let scrapToFreeBtn = this.byId("scrapToFreeBtn");
+
+                let bHasSelection = aSelectedIndices.length > 0;
+
+                stockMovementBtn.setEnabled(bHasSelection);
+                massFillBtn.setEnabled(bHasSelection);
+                scrapToFreeBtn.setEnabled(bHasSelection);
+            },
+
             onScrapToFreeButtonPress: function () {
                 const scrapToFreeBtn = this.byId('scrapToFreeBtn');
                 const oTable = this.byId('table');
@@ -365,6 +380,46 @@ sap.ui.define([
 
                 scrapToFreeBtn.setEnabled(false);
             },
+
+            onScrapToFreeButtonPressUiTable: function () {
+                const scrapToFreeBtn = this.byId("scrapToFreeBtn");
+                const oTable = this.byId("idUiTable");
+
+                // obtener índices seleccionados
+                const aSelectedIndices = oTable.getSelectedIndices();
+
+                aSelectedIndices.forEach(iIndex => {
+                    // obtener contexto y objeto de datos
+                    let oContext = oTable.getContextByIndex(iIndex);
+                    if (!oContext) return;
+
+                    let oData = oContext.getObject();
+
+                    // obtener la fila (control de UI)
+                    let oRow = oTable.getRows()[iIndex - oTable.getFirstVisibleRow()];
+                    if (!oRow) return;
+
+                    let aCells = oRow.getCells();
+
+                    // obtener valores y setear en las celdas
+                    let oBlockedCell = aCells.find(c => c.getId().includes("blockedQty"));
+                    let blockedValue = oBlockedCell?.getText ? oBlockedCell.getText() : "0";
+
+                    let oFreeCell = aCells.find(c => c.getId().includes("freeQty"));
+                    if (oFreeCell?.setValue) {
+                        oFreeCell.setValue(blockedValue);
+                    }
+
+                    let oScrapCell = aCells.find(c => c.getId().includes("scrapQty"));
+                    if (oScrapCell?.setValue) {
+                        oScrapCell.setValue(parseInt("0").toFixed(3));
+                    }
+                });
+
+                // deshabilitar botón después de usar
+                scrapToFreeBtn.setEnabled(false);
+            },
+
 
             onUpdateFinished: function () {
                 let table = this.getView().byId('table');
@@ -524,80 +579,140 @@ sap.ui.define([
 
             },
 
-            // beforeRebind: function (oEvent) {
-            //     const oTable = this.byId("smartTable").getTable();
-            //     const mBindingParams = oEvent.getParameter("bindingParams");
-            //     const oSmtFilter = this.byId("smartFilterBar");
+            beforeRebindUiTable: function (oEvent) {
+                const oTable = this.byId("idUiTable"); // sap.ui.table.Table
+                let mBindingParams = oEvent.getParameter("bindingParams");
+                let oSmtFilter = this.getView().byId("smartFilterBar");
 
-            //     // Nos aseguramos de definir eventos si no existen
-            //     mBindingParams.events = mBindingParams.events || {};
+                // getting filters controls
+                let dateFrom = oSmtFilter.getControlByKey("DateFrom");
+                let dateTo = oSmtFilter.getControlByKey("DateTo");
+                let productionOrder = oSmtFilter.getControlByKey("ProductionOrder");
+                let prodOperation = oSmtFilter.getControlByKey("ProductionOperation");
+                let zuser = oSmtFilter.getControlByKey("Zuser");
+                let material = oSmtFilter.getControlByKey("Component");
+                let plant = oSmtFilter.getControlByKey("Plant");
+                let workCenter = oSmtFilter.getControlByKey("WorkCenter");
+                let storageLocation = oSmtFilter.getControlByKey("StorageLocation");
+                let serialNumber = oSmtFilter.getControlByKey("SerialNumber");
+                let referenceNumber = oSmtFilter.getControlByKey("ReferenceNumber");
+                let equipment = oSmtFilter.getControlByKey("Equipment");
 
-            //     // Hook que se ejecuta cuando los datos ya se cargaron
-            //     mBindingParams.events.dataReceived = () => {
-            //         this._clearMassInputs(); // función que limpia los campos masivos
-            //     };
+                // getting filters values
+                let dateFromValue = dateFrom.getValue();
+                let dateToValue = dateTo.getValue();
+                let prodOrderValues = productionOrder.getTokens().map(token => token.getKey());
+                let prodOperationValues = prodOperation.getTokens().map(token => token.getKey());
+                let zuserValues = zuser.getTokens().map(token => token.getKey());
+                let materialValues = material.getTokens().map(token => token.getKey());
+                let plantValues = plant.getTokens().map(token => token.getKey());
+                let workCenterValues = workCenter.getTokens().map(token => token.getKey());
+                let storageLocationValues = storageLocation.getTokens().map(token => token.getKey());
+                let serialNumberValues = serialNumber.getTokens().map(token => token.getKey());
+                let referenceNumberValues = referenceNumber.getTokens().map(token => token.getKey());
+                let equipmentValues = equipment.getTokens().map(token => token.getKey());
 
-            //     // let aColumns = oTable.getColumns();
+                if (prodOrderValues.length > 0) {
+                    this.setSmartFilters(mBindingParams, prodOrderValues, "ProductionOrder");
+                }
 
-            //     // aColumns.forEach(function (oColumn) {
-            //     //     let sProperty = oColumn.getFilterProperty();
-            //     //     oColumn.setWidth('150px');
+                if (prodOperationValues.length > 0) {
+                    this.setSmartFilters(mBindingParams, prodOperationValues, "ProductionOperation");
+                }
 
-            //     //     if (["ScrapQuantity", "FreeQuantity", "Reason", "CostCenter"].includes(sProperty)) {
-            //     //         oColumn.setTemplate(new sap.m.Input({
-            //     //             id: `${sProperty + '-' + Math.random().toString(36)}`,
-            //     //             value: `{${sProperty}}`,
-            //     //             maxLength: 5,
-            //     //             type: sProperty === "Reason" || sProperty === "CostCenter" ? "Text" : "Number",
-            //     //             showValueHelp: sProperty === "Reason" || sProperty === "CostCenter",
-            //     //             valueHelpRequest: this.onValueHelpRequestInputsTable.bind(this),
-            //     //             change: sProperty === 'ScrapQuantity' || sProperty === 'FreeQuantity' ? this.onFormatValue.bind(this) : ''
-            //     //         }));
-            //     //     }
-            //     // }.bind(this));
+                if (zuserValues.length > 0) {
+                    this.setSmartFilters(mBindingParams, zuserValues, "Zuser");
+                }
 
-            //     const getValue = key => oSmtFilter.getControlByKey(key)?.getValue?.() || "";
+                if (materialValues.length > 0) {
+                    this.setSmartFilters(mBindingParams, materialValues, "Material");
+                }
 
-            //     const filters = {
-            //         DateFrom: getValue("DateFrom"),
-            //         DateTo: getValue("DateTo"),
-            //         ProductionOrder: getValue("ProductionOrder"),
-            //         ProductionOperation: getValue("ProductionOperation"),
-            //         Zuser: getValue("Zuser"),
-            //         Component: getValue("Component"),
-            //         Plant: getValue("Plant"),
-            //         WorkCenter: getValue("WorkCenter"),
-            //         StorageLocation: getValue("StorageLocation"),
-            //         SerialNumber: getValue("SerialNumber"),
-            //         ReferenceNumber: getValue("ReferenceNumber"),
-            //         Equipment: getValue("Equipment")
-            //     };
+                if (plantValues.length > 0) {
+                    this.setSmartFilters(mBindingParams, plantValues, "Plant");
+                }
 
-            //     // Filtros individuales
-            //     for (const key in filters) {
-            //         if (filters[key] && !key.includes("Date")) {
-            //             this.setSmartFilters(mBindingParams, filters[key], key);
-            //         }
-            //     }
+                if (workCenterValues.length > 0) {
+                    this.setSmartFilters(mBindingParams, workCenterValues, "WorkCenter");
+                }
 
-            //     // Filtros de fechas
-            //     if (filters.DateFrom && filters.DateTo) {
-            //         mBindingParams.filters.push(new Filter("DateFrom", FilterOperator.BT, new Date(filters.DateFrom), new Date(filters.DateTo)));
-            //     } else if (filters.DateFrom) {
-            //         mBindingParams.filters.push(new Filter("DateFrom", FilterOperator.EQ, new Date(filters.DateFrom)));
-            //     } else if (filters.DateTo) {
-            //         mBindingParams.filters.push(new Filter("DateTo", FilterOperator.EQ, new Date(filters.DateTo)));
-            //     }
+                if (storageLocationValues.length > 0) {
+                    this.setSmartFilters(mBindingParams, storageLocationValues, "StorageLocation");
+                }
 
-            //     // Limpieza previa al binding
-            //     // oTable.clearSelection();
-            //     this.byId("MassFillFields").setEnabled(false);
-            //     this.byId("stockTransferBtn").setEnabled(false);
+                if (serialNumberValues.length > 0) {
+                    this.setSmartFilters(mBindingParams, serialNumberValues, "SerialNumber");
+                }
 
-            //     if (oTable) {
-            //         oTable.setVisibleRowCount(10);
-            //     }
-            // },
+                if (referenceNumberValues.length > 0) {
+                    this.setSmartFilters(mBindingParams, referenceNumberValues, "ReferenceNumber");
+                }
+
+                if (equipmentValues.length > 0) {
+                    this.setSmartFilters(mBindingParams, equipmentValues, "Equipment");
+                }
+
+                if (dateFromValue && dateToValue) {
+                    let betweenFilter = new Filter("DateFrom", FilterOperator.BT, new Date(dateFromValue), new Date(dateToValue));
+                    mBindingParams.filters.push(betweenFilter);
+                }
+
+                if (dateFromValue && !dateToValue) {
+                    let dateFromFilter = new Filter("DateFrom", FilterOperator.EQ, new Date(dateFromValue));
+                    mBindingParams.filters.push(dateFromFilter);
+                }
+
+                if (dateToValue && !dateFromValue) {
+                    let dateToFilter = new Filter("DateTo", FilterOperator.EQ, new Date(dateToValue));
+                    mBindingParams.filters.push(dateToFilter);
+                }
+
+                if (stockTransfer) {
+                    // obtenés todos los rows actualmente renderizados
+                    let aRows = oTable.getRows();
+
+                    aRows.forEach(oRow => {
+                        // cada row tiene un contexto de binding
+                        let oContext = oRow.getBindingContext();
+                        if (!oContext) return;
+
+                        let oData = oContext.getObject(); // datos de esa fila
+                        let blockedCellValue = oData.BlockedQuantity;
+
+                        // ahora buscás los controles dentro de la fila
+                        let aCells = oRow.getCells();
+
+                        aCells.forEach(oCell => {
+                            let sId = oCell.getId();
+
+                            if (sId.includes("Reason") && oCell.setValue) {
+                                oCell.setValue("");
+                                oCell.setValueState("None");
+                            }
+
+                            if (sId.includes("CostCenter") && oCell.setValue) {
+                                oCell.setValue("");
+                                oCell.setValueState("None");
+                            }
+
+                            if (sId.includes("freeQty") && oCell.setValue) {
+                                oCell.setValue(parseInt("0").toFixed(3));
+                            }
+
+                            if (sId.includes("scrapQty") && oCell.setValue) {
+                                oCell.setValue(blockedCellValue);
+                            }
+                        });
+                    });
+
+                    // limpiás selección
+                    oTable.clearSelection(); // 👈 en ui.table.Table es este método
+                    this.byId("MassFillFields").setEnabled(false);
+                    this.byId("stockTransferBtn").setEnabled(false);
+                    this.byId("scrapToFreeBtn").setEnabled(false);
+                    return;
+                }
+            },
 
             _clearMassInputs: function () {
                 const oTable = this.byId("smartTable").getTable();
@@ -1129,59 +1244,43 @@ sap.ui.define([
             },
 
             // SAP.UI.TABLE VARIANT
-            // onConfirmMassFillAction: function (oEvent) {
-            //     const that = this;
-            //     const oTable = this.byId("smartTable").getTable();
-            //     const oResourceBundle = this.getView().getModel("i18n").getResourceBundle();
-            //     const reasonInput = this.byId("MassFill-Reason");
-            //     const costCenterInput = this.byId("MassFill-CostCenter");
+            onConfirmMassFillActionUiTable: function (oEvent) {
+                const that = this;
+                const oTable = this.byId("idUiTable");
+                const oResourceBundle = this.getView().getModel("i18n").getResourceBundle();
+                const regex = /--([a-zA-Z]+)--([a-zA-Z]+)/;
+                const reasonInput = this.byId("MassFill-Reason");
+                const costCenterInput = this.byId("MassFill-CostCenter");
 
-            //     const confirmActionMsg = oResourceBundle.getText("confirmMsg");
-            //     const confirmActionTitle = oResourceBundle.getText("confirmActionTitle");
+                // obtener índices seleccionados
+                const aSelectedIndices = oTable.getSelectedIndices();
 
-            //     const reasonValue = reasonInput.getValue().trim();
-            //     const costCenterValue = costCenterInput.getValue().trim();
+                aSelectedIndices.forEach(iIndex => {
+                    // obtener la fila visible (ojo con el scroll)
+                    let oRow = oTable.getRows()[iIndex - oTable.getFirstVisibleRow()];
+                    if (!oRow) return;
 
-            //     if (!reasonValue && !costCenterValue) {
-            //         reasonInput.setValueState("Error");
-            //         costCenterInput.setValueState("Error");
-            //         return;
-            //     }
+                    let aCells = oRow.getCells();
 
-            //     const selectedIndices = oTable.getSelectedIndices();
-            //     if (!selectedIndices.length) {
-            //         MessageToast.show(oResourceBundle.getText("noRowsSelected"));
-            //         return;
-            //     }
+                    // completar Reason
+                    let oReasonCell = aCells
+                        .filter(cell => cell.getId().match(regex))
+                        .find(cell => cell.sId.includes("Reason"));
+                    if (oReasonCell && oReasonCell.setValue) {
+                        oReasonCell.setValue(reasonInput.getValue().trim());
+                    }
 
-            //     MessageBox.confirm(confirmActionMsg, {
-            //         title: confirmActionTitle,
-            //         actions: [MessageBox.Action.OK, MessageBox.Action.CANCEL],
-            //         emphasizedAction: MessageBox.Action.OK,
-            //         onClose: function (sAction) {
-            //             if (sAction === MessageBox.Action.OK) {
-            //                 const oModel = oTable.getModel(); // Modelo principal
+                    // completar CostCenter
+                    let oCostCenterCell = aCells
+                        .filter(cell => cell.getId().match(regex))
+                        .find(cell => cell.sId.includes("CostCenter"));
+                    if (oCostCenterCell && oCostCenterCell.setValue) {
+                        oCostCenterCell.setValue(costCenterInput.getValue().trim());
+                    }
+                });
 
-            //                 selectedIndices.forEach(index => {
-            //                     const oContext = oTable.getContextByIndex(index); // Accede al contexto real
-            //                     if (!oContext) return;
-
-            //                     const path = oContext.getPath();
-
-            //                     if (reasonValue) {
-            //                         oModel.setProperty(path + "/Reason", reasonValue);
-            //                     }
-
-            //                     if (costCenterValue) {
-            //                         oModel.setProperty(path + "/CostCenter", costCenterValue);
-            //                     }
-            //                 });
-
-            //                 that.destroyFragments();
-            //             }
-            //         }
-            //     });
-            // },
+                that.destroyFragments();
+            },
 
             onValueHelpRequest: function (oEvent) {
                 let currId = oEvent.getSource().getId();
@@ -1733,6 +1832,51 @@ sap.ui.define([
 
             handleMessagePopoverPress: function (oEvent) {
                 oMessagePopover.toggle(oEvent.getSource());
+            },
+
+            onSmartTableBeforeExport: function (oEvent) {
+                const mExcelSettings = oEvent.getParameter("exportSettings");
+
+                function ptToDate(pt) {
+                    if (!pt) return null;
+                    const m = /PT(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?/.exec(pt);
+                    if (!m) return null;
+                    const h = parseInt(m[1] || "0", 10);
+                    const mm = parseInt(m[2] || "0", 10);
+                    const s = parseInt(m[3] || "0", 10);
+                    return new Date(Date.UTC(1970, 0, 1, h, mm, s));
+                }
+
+                mExcelSettings.workbook.columns.forEach(col => {
+                    if (col.property === "DateFrom") {
+                        col.type = sap.ui.export.EdmType.Date;
+                        col.format = "mm/dd/yyyy";
+                        col.formatter = function (rawValue) {
+                            const match = /Date\((\d+)\)/.exec(rawValue);
+                            if (!match) return null;
+
+                            return new Date(parseInt(match[1], 10));
+                        };
+                    }
+
+                    if (col.property === "Time") {
+                        col.type = sap.ui.export.EdmType.Time;
+                        col.format = "h:mm:ss"; // formato de salida en Excel
+                        col.formatter = function (rawValue) {
+                            if (rawValue instanceof Date) return rawValue;
+                            // si viene como PT... la parseamos
+                            if (typeof rawValue === "string" && rawValue.startsWith("PT")) {
+                                return ptToDate(rawValue);
+                            }
+
+                            if (typeof rawValue === "string" && /^[0-2]?\d:/.test(rawValue)) {
+                                const parts = rawValue.split(":");
+                                return new Date(Date.UTC(1970, 0, 1, parseInt(parts[0], 10), parseInt(parts[1], 10), parseInt(parts[2] || "0", 10)));
+                            }
+                            return null;
+                        };
+                    }
+                });
             }
         });
     });
