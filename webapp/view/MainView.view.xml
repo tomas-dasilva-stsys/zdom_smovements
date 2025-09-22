@@ -417,7 +417,7 @@
                     selectionChange="onSelectionChange"
                     sticky="ColumnHeaders,HeaderToolbar"
                     growing="true"
-                    width="3500px"
+                    width="6000px"
                     growingScrollToLoad="true"
                     growingThreshold="1500"
                 >
