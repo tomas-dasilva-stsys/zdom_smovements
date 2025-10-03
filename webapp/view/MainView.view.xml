@@ -358,6 +358,41 @@
                         />
                     </smartfilterbar:customControl>
                 </smartfilterbar:ControlConfiguration>
+                <smartfilterbar:ControlConfiguration
+                    groupId="FILTERS"
+                    key="NotificationCreationDate"
+                    label="{i18n>notificationCreationDate}"
+                    controlType="date"
+                >
+                    <smartfilterbar:customControl>
+                        <DatePicker
+                            displayFormat="dd.MM.yyyy"
+                            valueFormat="yyyy-MM-ddThh:mm:ss"
+                        />
+                    </smartfilterbar:customControl>
+                </smartfilterbar:ControlConfiguration>
+                <smartfilterbar:ControlConfiguration
+                    groupId="FILTERS"
+                    key="NotificationCreationTime"
+                    label="{i18n>notificationCreationTime}"
+                    controlType="dateTimePicker"
+                >
+                    <smartfilterbar:customControl>
+                        <TimePicker
+                            localeId=""
+                            mask=""
+                            placeholderSymbol=":"
+                            valueFormat="HH:mm:ss"
+                            displayFormat="HH:mm:ss"
+                        >
+                            <rules />
+                        </TimePicker>
+                        <!-- <DatePicker
+                            displayFormat="dd.MM.yyyy"
+                            valueFormat="yyyy-MM-ddThh:mm:ss"
+                        /> -->
+                    </smartfilterbar:customControl>
+                </smartfilterbar:ControlConfiguration>
             </smartfilterbar:controlConfiguration>
         </smartfilterbar:SmartFilterBar>
 
@@ -371,7 +406,7 @@
                 header="{i18n>header}"
                 smartFilterId="smartFilterBar"
                 entitySet="ScrapMovements"
-                initiallyVisibleFields="BlockedQuantity,ScrapQuantity,FreeQuantity,Reason,CostCenter,ProductionOrder,ProductionOperation,Time,Zuser,Component,Plant,WorkCenter,StorageLocation,DateFrom,SerialNumber,Element,Cause,RepairCode,Equipment,EquipmentDescription,DNIEquipment"
+                initiallyVisibleFields="BlockedQuantity,ScrapQuantity,FreeQuantity,Reason,CostCenter,ProductionOrder,ProductionOperation,Time,Zuser,Component,Plant,WorkCenter,StorageLocation,DateFrom,SerialNumber,Element,Cause,RepairCode,Equipment,EquipmentDescription,DNIEquipment,NotificationCreationDate,NotificationCreationTime"
                 requestAtLeastFields="ProductionOrder,ProductionOperation,Charg,Component,ItemNumber,StorageLocation,NotificationType,NotificationNumber,SerialNumber,UnitOfMeasure,Plant,ReserveNumber,Quantity,Material,BomNumber,ReferenceNumber,Equipment,EquipmentDescription,DNIEquipment"
                 height="100%"
                 persistencyKey="SmartTable_Explored"
@@ -501,6 +536,24 @@
                                 text="{/#ScrapMovementsType/Time/@sap:label}"
                             />
                         </Column>
+                        <Column width="100px">
+                            <customData>
+                                <core:CustomData
+                                    key="p13nData"
+                                    value='\{"columnKey": "NotificationCreationDate", "leadingProperty": "NotificationCreationDate", "order": 99}'
+                                />
+                            </customData>
+                            <Text text="{i18n>notificationCreationDate}" />
+                        </Column>
+                        <Column width="100px">
+                            <customData>
+                                <core:CustomData
+                                    key="p13nData"
+                                    value='\{"columnKey": "NotificationCreationTime", "leadingProperty": "NotificationCreationTime", "order": 100}'
+                                />
+                            </customData>
+                            <Text text="{i18n>notificationCreationTime}" />
+                        </Column>
                     </columns>
 
                     <items>
@@ -562,6 +615,16 @@
                             <cells>
                                 <Text
                                     text="{path: 'Time', formatter: '.formatter.formatEdmTimeByLocale'}"
+                                />
+                            </cells>
+                            <cells>
+                                <Text
+                                    text="{path: 'NotificationCreationDate', formatter: '.formatter.formatDateByLocale'}"
+                                />
+                            </cells>
+                            <cells>
+                                <Text
+                                    text="{path: 'NotificationCreationTime', formatter: '.formatter.formatEdmTimeByLocale'}"
                                 />
                             </cells>
                         </ColumnListItem>

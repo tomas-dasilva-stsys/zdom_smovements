@@ -78,6 +78,61 @@ sap.ui.define([
                 this._localChangesModel = new sap.ui.model.json.JSONModel({});
                 this.getView().setModel(this._localChangesModel, "localChanges");
                 // const oTable = this.byId('smartTable').getTable();
+
+                const oSmart = this.byId("smartTable");
+
+                // SmartTable dispara 'initialise' cuando termina de crear la tabla interna
+                oSmart.attachEventOnce("initialise", () => {
+                    this._ensureColumnsLast(oSmart);
+                });
+
+                // fallback por si 'initialise' no llega a dispararse por alguna razón
+                setTimeout(() => this._ensureColumnsLast(oSmart), 500);
+            },
+
+            _ensureColumnsLast: function (oSmartTable) {
+                const fnMove = () => {
+                    const oTable = oSmartTable.getTable(); // tabla interna (sap.m.Table)
+                    if (!oTable) return false;
+
+                    const aCols = oTable.getColumns();
+                    const aKeysToMove = ["NotificationCreationDate", "NotificationCreationTime"];
+
+                    // helper: devuelve el objeto p13nData si existe
+                    const getP13n = (oCol) => {
+                        const aCD = oCol.getCustomData ? oCol.getCustomData() : [];
+                        const o = aCD.find(cd => cd.getKey && cd.getKey() === "p13nData");
+                        if (!o) return null;
+                        try { return JSON.parse(o.getValue()); } catch (e) { return null; }
+                    };
+
+                    // mover cada columna encontrada al final
+                    aKeysToMove.forEach(sKey => {
+                        const oCol = aCols.find(col => {
+                            const oP = getP13n(col);
+                            return oP && (oP.columnKey === sKey || oP.leadingProperty === sKey || oP.name === sKey);
+                        });
+                        if (oCol) {
+                            // quita y vuelve a añadir al final (preserva la instancia)
+                            oTable.removeAggregation("columns", oCol, true);
+                            oTable.addAggregation("columns", oCol, true);
+                        }
+                    });
+
+                    // re-render para forzar actualización visual
+                    oTable.rerender();
+                    return true;
+                };
+
+                // intenta mover ahora, y si no está la tabla, prueba con polling corto
+                if (!fnMove()) {
+                    let i = 0;
+                    const iMax = 20;
+                    const iHandle = setInterval(() => {
+                        i++;
+                        if (fnMove() || i >= iMax) clearInterval(iHandle);
+                    }, 150);
+                }
             },
 
             restoreLocalChanges: function () {
@@ -474,6 +529,8 @@ sap.ui.define([
                 let oSmtFilter = this.getView().byId("smartFilterBar");
                 let dateFrom = oSmtFilter.getControlByKey("DateFrom");
                 let dateTo = oSmtFilter.getControlByKey("DateTo");
+                let notificationCreationDate = oSmtFilter.getControlByKey("NotificationCreationDate");
+                let notificationCreationTime = oSmtFilter.getControlByKey("NotificationCreationTime");
                 let productionOrder = oSmtFilter.getControlByKey("ProductionOrder");
                 let prodOperation = oSmtFilter.getControlByKey("ProductionOperation");
                 let zuser = oSmtFilter.getControlByKey("Zuser");
@@ -488,6 +545,8 @@ sap.ui.define([
                 // getting filters values
                 let dateFromValue = dateFrom.getValue();
                 let dateToValue = dateTo.getValue();
+                let notificationCreationDateValue = notificationCreationDate.getValue();
+                let notificationCreationTimeValue = notificationCreationTime.getValue();
                 let prodOrderValues = productionOrder.getTokens().map(token => token.getKey());
                 let prodOperationValues = prodOperation.getTokens().map(token => token.getKey());
                 let zuserValues = zuser.getTokens().map(token => token.getKey());
@@ -552,6 +611,22 @@ sap.ui.define([
                 if (dateToValue && !dateFromValue) {
                     let dateToFilter = new Filter("DateTo", FilterOperator.EQ, new Date(dateToValue));
                     mBindingParams.filters.push(dateToFilter);
+                }
+
+                if (notificationCreationDateValue) {
+                    let notificationCreationDateFilter = new Filter("NotificationCreationDate", FilterOperator.EQ, new Date(notificationCreationDateValue));
+
+                    mBindingParams.filters.push(notificationCreationDateFilter);
+                }
+
+                if (notificationCreationTimeValue) {
+                    let [hours, minutes, seconds] = notificationCreationTimeValue.split(":");
+
+                    // convert to format OData Edm.Time: PTxxHxxMxxS
+                    let edmTimeValue = `PT${hours}H${minutes}M${seconds}S`;
+                    let notificationCreationTimeFilter = new Filter("NotificationCreationTime", FilterOperator.EQ, edmTimeValue);
+
+                    mBindingParams.filters.push(notificationCreationTimeFilter);
                 }
 
                 if (stockTransfer) {
@@ -1848,9 +1923,9 @@ sap.ui.define([
                 }
 
                 mExcelSettings.workbook.columns.forEach(col => {
-                    if (col.property === "DateFrom") {
+                    if (col.property === "DateFrom" || col.property === "NotificationCreationDate") {
                         col.type = sap.ui.export.EdmType.Date;
-                        col.format = "mm/dd/yyyy";
+                        col.format = "dd/mm/yyyy";
                         col.formatter = function (rawValue) {
                             const match = /Date\((\d+)\)/.exec(rawValue);
                             if (!match) return null;
@@ -1859,7 +1934,7 @@ sap.ui.define([
                         };
                     }
 
-                    if (col.property === "Time") {
+                    if (col.property === "Time" || col.property === "NotificationCreationTime") {
                         col.type = sap.ui.export.EdmType.Time;
                         col.format = "h:mm:ss"; // formato de salida en Excel
                         col.formatter = function (rawValue) {

@@ -31,7 +31,7 @@ sap.ui.define([], function () {
             let sLocale = sap.ui.getCore().getConfiguration().getLanguage();
             let sTimeZone = getTimeZoneForLocale(sLocale.toLowerCase());
 
-            return new Intl.DateTimeFormat(sLocale, {
+            return new Intl.DateTimeFormat("es-ES", {
                 timeZone: sTimeZone,
                 year: "numeric",
                 month: "2-digit",
