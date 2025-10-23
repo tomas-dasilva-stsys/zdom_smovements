@@ -365,7 +365,11 @@
                     controlType="date"
                 >
                     <smartfilterbar:customControl>
-                        <DatePicker
+                        <!-- <DatePicker
+                            displayFormat="dd.MM.yyyy"
+                            valueFormat="yyyy-MM-ddThh:mm:ss"
+                        /> -->
+                        <DateRangeSelection
                             displayFormat="dd.MM.yyyy"
                             valueFormat="yyyy-MM-ddThh:mm:ss"
                         />

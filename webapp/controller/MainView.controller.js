@@ -614,9 +614,19 @@ sap.ui.define([
                 }
 
                 if (notificationCreationDateValue) {
-                    let notificationCreationDateFilter = new Filter("NotificationCreationDate", FilterOperator.EQ, new Date(notificationCreationDateValue));
+                    const dateFrom = notificationCreationDate.getDateValue()
+                    const dateTo = notificationCreationDate.getSecondDateValue()
 
-                    mBindingParams.filters.push(notificationCreationDateFilter);
+                    if (dateFrom && dateTo) {
+                        let notifFilter = new Filter("NotificationCreationDate", FilterOperator.BT, dateFrom, dateTo);
+                        mBindingParams.filters.push(notifFilter);
+                    } else if (dateFrom) {
+                        let notifFilter = new Filter("NotificationCreationDate", FilterOperator.EQ, dateFrom);
+                        mBindingParams.filters.push(notifFilter);
+                    } else if (dateTo) {
+                        let notifFilter = new Filter("NotificationCreationDate", FilterOperator.EQ, dateTo);
+                        mBindingParams.filters.push(notifFilter);
+                    }
                 }
 
                 if (notificationCreationTimeValue) {
