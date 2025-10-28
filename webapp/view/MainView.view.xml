@@ -371,7 +371,7 @@
                         /> -->
                         <DateRangeSelection
                             displayFormat="dd.MM.yyyy"
-                            valueFormat="yyyy-MM-ddThh:mm:ss"
+                            valueFormat="yyyy-MM-dd"
                         />
                     </smartfilterbar:customControl>
                 </smartfilterbar:ControlConfiguration>
@@ -623,7 +623,7 @@
                             </cells>
                             <cells>
                                 <Text
-                                    text="{path: 'NotificationCreationDate', formatter: '.formatter.formatDateByLocale'}"
+                                    text="{path: 'NotificationCreationDate', formatter: '.formatter.formatNotificationCreationDate'}"
                                 />
                             </cells>
                             <cells>

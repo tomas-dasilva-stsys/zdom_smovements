@@ -617,14 +617,33 @@ sap.ui.define([
                     const dateFrom = notificationCreationDate.getDateValue()
                     const dateTo = notificationCreationDate.getSecondDateValue()
 
+                    let dateFromStr
+                    let dateToStr
+
+                    const formatDateToYYYYMMDD = (date) => {
+                        const year = date.getFullYear();
+                        const month = String(date.getMonth() + 1).padStart(2, '0');
+                        const day = String(date.getDate()).padStart(2, '0');
+                        return `${year}${month}${day}`; // "20250704"
+                    };
+
+                    if (dateFrom) {
+                        dateFromStr = formatDateToYYYYMMDD(dateFrom);
+                    }
+
+                    if (dateTo) {
+                        dateToStr = formatDateToYYYYMMDD(dateTo);
+                    }
+
+
                     if (dateFrom && dateTo) {
-                        let notifFilter = new Filter("NotificationCreationDate", FilterOperator.BT, dateFrom, dateTo);
+                        let notifFilter = new Filter("NotificationCreationDate", FilterOperator.BT, dateFromStr, dateToStr);
                         mBindingParams.filters.push(notifFilter);
                     } else if (dateFrom) {
-                        let notifFilter = new Filter("NotificationCreationDate", FilterOperator.EQ, dateFrom);
+                        let notifFilter = new Filter("NotificationCreationDate", FilterOperator.EQ, dateFromStr);
                         mBindingParams.filters.push(notifFilter);
                     } else if (dateTo) {
-                        let notifFilter = new Filter("NotificationCreationDate", FilterOperator.EQ, dateTo);
+                        let notifFilter = new Filter("NotificationCreationDate", FilterOperator.EQ, dateToStr);
                         mBindingParams.filters.push(notifFilter);
                     }
                 }

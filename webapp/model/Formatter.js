@@ -39,6 +39,26 @@ sap.ui.define([], function () {
             }).format(oDate);
         },
 
+        formatNotificationCreationDate: function (sDate) {
+            if (!sDate) return "";
+
+            let oDate;
+            if (sDate instanceof Date) {
+                oDate = sDate
+            }
+
+            const year = parseInt(sDate.substring(0, 4), 10);
+            const month = parseInt(sDate.substring(4, 6), 10) - 1; // Mes base 0
+            const day = parseInt(sDate.substring(6, 8), 10);
+            oDate = new Date(year, month, day);
+
+            const finalYear = oDate.getFullYear();
+            const finalMonth = String(oDate.getMonth() + 1).padStart(2, "0");
+            const finalDay = String(oDate.getDate()).padStart(2, "0");
+
+            return `${finalDay}/${finalMonth}/${finalYear}`;
+        },
+
         formatEdmTimeByLocale: function (vMs) {
             if (vMs == null || vMs === "") {
                 return "";
