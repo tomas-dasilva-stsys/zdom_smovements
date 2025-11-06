@@ -79,61 +79,56 @@ sap.ui.define([
                 this.getView().setModel(this._localChangesModel, "localChanges");
                 // const oTable = this.byId('smartTable').getTable();
 
-                const oSmart = this.byId("smartTable");
-
-                // SmartTable dispara 'initialise' cuando termina de crear la tabla interna
-                oSmart.attachEventOnce("initialise", () => {
-                    this._ensureColumnsLast(oSmart);
-                });
+                const oSmartFilterBar = this.byId("smartFilterBar");
 
                 // fallback por si 'initialise' no llega a dispararse por alguna razón
-                setTimeout(() => this._ensureColumnsLast(oSmart), 500);
+                // setTimeout(() => this._ensureColumnsLast(oSmart), 500);
             },
 
-            _ensureColumnsLast: function (oSmartTable) {
-                const fnMove = () => {
-                    const oTable = oSmartTable.getTable(); // tabla interna (sap.m.Table)
-                    if (!oTable) return false;
+            // _ensureColumnsLast: function (oSmartTable) {
+            //     const fnMove = () => {
+            //         const oTable = oSmartTable.getTable(); // tabla interna (sap.m.Table)
+            //         if (!oTable) return false;
 
-                    const aCols = oTable.getColumns();
-                    const aKeysToMove = ["NotificationCreationDate", "NotificationCreationTime"];
+            //         const aCols = oTable.getColumns();
+            //         const aKeysToMove = ["NotificationCreationDate", "NotificationCreationTime"];
 
-                    // helper: devuelve el objeto p13nData si existe
-                    const getP13n = (oCol) => {
-                        const aCD = oCol.getCustomData ? oCol.getCustomData() : [];
-                        const o = aCD.find(cd => cd.getKey && cd.getKey() === "p13nData");
-                        if (!o) return null;
-                        try { return JSON.parse(o.getValue()); } catch (e) { return null; }
-                    };
+            //         // helper: devuelve el objeto p13nData si existe
+            //         const getP13n = (oCol) => {
+            //             const aCD = oCol.getCustomData ? oCol.getCustomData() : [];
+            //             const o = aCD.find(cd => cd.getKey && cd.getKey() === "p13nData");
+            //             if (!o) return null;
+            //             try { return JSON.parse(o.getValue()); } catch (e) { return null; }
+            //         };
 
-                    // mover cada columna encontrada al final
-                    aKeysToMove.forEach(sKey => {
-                        const oCol = aCols.find(col => {
-                            const oP = getP13n(col);
-                            return oP && (oP.columnKey === sKey || oP.leadingProperty === sKey || oP.name === sKey);
-                        });
-                        if (oCol) {
-                            // quita y vuelve a añadir al final (preserva la instancia)
-                            oTable.removeAggregation("columns", oCol, true);
-                            oTable.addAggregation("columns", oCol, true);
-                        }
-                    });
+            //         // mover cada columna encontrada al final
+            //         aKeysToMove.forEach(sKey => {
+            //             const oCol = aCols.find(col => {
+            //                 const oP = getP13n(col);
+            //                 return oP && (oP.columnKey === sKey || oP.leadingProperty === sKey || oP.name === sKey);
+            //             });
+            //             if (oCol) {
+            //                 // quita y vuelve a añadir al final (preserva la instancia)
+            //                 oTable.removeAggregation("columns", oCol, true);
+            //                 oTable.addAggregation("columns", oCol, true);
+            //             }
+            //         });
 
-                    // re-render para forzar actualización visual
-                    oTable.rerender();
-                    return true;
-                };
+            //         // re-render para forzar actualización visual
+            //         oTable.rerender();
+            //         return true;
+            //     };
 
-                // intenta mover ahora, y si no está la tabla, prueba con polling corto
-                if (!fnMove()) {
-                    let i = 0;
-                    const iMax = 20;
-                    const iHandle = setInterval(() => {
-                        i++;
-                        if (fnMove() || i >= iMax) clearInterval(iHandle);
-                    }, 150);
-                }
-            },
+            //     // intenta mover ahora, y si no está la tabla, prueba con polling corto
+            //     if (!fnMove()) {
+            //         let i = 0;
+            //         const iMax = 20;
+            //         const iHandle = setInterval(() => {
+            //             i++;
+            //             if (fnMove() || i >= iMax) clearInterval(iHandle);
+            //         }, 150);
+            //     }
+            // },
 
             restoreLocalChanges: function () {
                 let oTable = this.byId("smartTable").getTable();
@@ -530,7 +525,7 @@ sap.ui.define([
                 let dateFrom = oSmtFilter.getControlByKey("DateFrom");
                 let dateTo = oSmtFilter.getControlByKey("DateTo");
                 let notificationCreationDate = oSmtFilter.getControlByKey("NotificationCreationDate");
-                let notificationCreationTime = oSmtFilter.getControlByKey("NotificationCreationTime");
+                // let notificationCreationTime = oSmtFilter.getControlByKey("NotificationCreationTime");
                 let productionOrder = oSmtFilter.getControlByKey("ProductionOrder");
                 let prodOperation = oSmtFilter.getControlByKey("ProductionOperation");
                 let zuser = oSmtFilter.getControlByKey("Zuser");
@@ -546,7 +541,13 @@ sap.ui.define([
                 let dateFromValue = dateFrom.getValue();
                 let dateToValue = dateTo.getValue();
                 let notificationCreationDateValue = notificationCreationDate.getValue();
-                let notificationCreationTimeValue = notificationCreationTime.getValue();
+                // let notificationCreationTimeValue = notificationCreationTime.getValue();
+
+                // getting timeFrom and timeTo values
+                // let notCreationTimeFrom = this.byId("timeFrom").getValue();
+                // let notCreationTimeTo = this.byId("timeTo").getValue();
+                //
+
                 let prodOrderValues = productionOrder.getTokens().map(token => token.getKey());
                 let prodOperationValues = prodOperation.getTokens().map(token => token.getKey());
                 let zuserValues = zuser.getTokens().map(token => token.getKey());
@@ -648,15 +649,21 @@ sap.ui.define([
                     }
                 }
 
-                if (notificationCreationTimeValue) {
-                    let [hours, minutes, seconds] = notificationCreationTimeValue.split(":");
+                // if (notCreationTimeFrom || notCreationTimeTo) {
+                //     // let [hours, minutes, seconds] = notificationCreationTimeValue.split(":");
+                //     const [fromHours, fromMin, fromSec] = notCreationTimeFrom.split(':');
+                //     const [toHours, toMin, toSec] = notCreationTimeTo.split(':');
 
-                    // convert to format OData Edm.Time: PTxxHxxMxxS
-                    let edmTimeValue = `PT${hours}H${minutes}M${seconds}S`;
-                    let notificationCreationTimeFilter = new Filter("NotificationCreationTime", FilterOperator.EQ, edmTimeValue);
+                //     // convert to format OData Edm.Time: PTxxHxxMxxS
+                //     // let edmTimeValue = `PT${hours}H${minutes}M${seconds}S`;
 
-                    mBindingParams.filters.push(notificationCreationTimeFilter);
-                }
+                //     const edmTimeFromValue = `PT${fromHours}H${fromMin}M${fromSec}S`;
+                //     const edmTimeToValue = `PT${toHours}H${toMin}M${toSec}S`;
+
+                //     let notificationCreationTimeFilter = new Filter("NotificationCreationTime", FilterOperator.BT, edmTimeFromValue, edmTimeToValue);
+
+                //     mBindingParams.filters.push(notificationCreationTimeFilter);
+                // }
 
                 if (stockTransfer) {
                     tableItems.forEach(row => {
@@ -865,7 +872,7 @@ sap.ui.define([
                     } else if (sValue.endsWith("*")) {
                         return new sap.ui.model.Filter(filterKey, sap.ui.model.FilterOperator.StartsWith, sValue.slice(0, -1));
                     } else {
-                        return new sap.ui.model.Filter(filterKey, sap.ui.model.FilterOperator.Contains, sValue);
+                        return new sap.ui.model.Filter(filterKey, sap.ui.model.FilterOperator.EQ, sValue);
                     }
                 });
 
@@ -1952,7 +1959,7 @@ sap.ui.define([
                 }
 
                 mExcelSettings.workbook.columns.forEach(col => {
-                    if (col.property === "DateFrom" || col.property === "NotificationCreationDate") {
+                    if (col.property === "DateFrom") {
                         col.type = sap.ui.export.EdmType.Date;
                         col.format = "dd/mm/yyyy";
                         col.formatter = function (rawValue) {
@@ -1963,24 +1970,170 @@ sap.ui.define([
                         };
                     }
 
+                    if (col.property === "NotificationCreationDate") {
+                        col.type = sap.ui.export.EdmType.Date;
+                        col.format = "dd/MM/yyyy"; // formato visible en Excel
+                    }
+
+
                     if (col.property === "Time" || col.property === "NotificationCreationTime") {
                         col.type = sap.ui.export.EdmType.Time;
                         col.format = "h:mm:ss"; // formato de salida en Excel
-                        col.formatter = function (rawValue) {
-                            if (rawValue instanceof Date) return rawValue;
-                            // si viene como PT... la parseamos
-                            if (typeof rawValue === "string" && rawValue.startsWith("PT")) {
-                                return ptToDate(rawValue);
-                            }
+                        // col.formatter = function (rawValue) {
+                        //     if (rawValue instanceof Date) return rawValue;
+                        //     // si viene como PT... la parseamos
+                        //     if (typeof rawValue === "string" && rawValue.startsWith("PT")) {
+                        //         return ptToDate(rawValue);
+                        //     }
 
-                            if (typeof rawValue === "string" && /^[0-2]?\d:/.test(rawValue)) {
-                                const parts = rawValue.split(":");
-                                return new Date(Date.UTC(1970, 0, 1, parseInt(parts[0], 10), parseInt(parts[1], 10), parseInt(parts[2] || "0", 10)));
-                            }
-                            return null;
-                        };
+                        //     if (typeof rawValue === "string" && /^[0-2]?\d:/.test(rawValue)) {
+                        //         const parts = rawValue.split(":");
+                        //         return new Date(Date.UTC(1970, 0, 1, parseInt(parts[0], 10), parseInt(parts[1], 10), parseInt(parts[2] || "0", 10)));
+                        //     }
+                        //     return null;
+                        // };
                     }
                 });
+
+                let oSmartTable = null;
+                // obtenemos la SmartTable:
+                oSmartTable = oEvent.getSource && oEvent.getSource();
+
+                const oInnerTable = oSmartTable.getTable(); // sap.ui.table.Table
+                let aContexts = [];
+
+                if (oInnerTable.getBinding) {
+                    const oBindingRows = oInnerTable.getBinding("items");
+                    if (oBindingRows && typeof oBindingRows.getContexts === "function") {
+                        // intentamos pedir todos los contexts; si no está disponible getLength, pedimos un rango razonable
+                        try {
+                            const iLength = oBindingRows.getLength && oBindingRows.getLength();
+                            if (typeof iLength === "number" && iLength > 0) {
+                                aContexts = oBindingRows.getContexts(0, iLength);
+                            } else {
+                                // getLength puede devolver -1 para OData; intentamos con un chunk grande
+                                aContexts = oBindingRows.getContexts(0, 10000); // ajustar si tenés >10000 filas
+                            }
+                        } catch (e) {
+                            console.error("Error al obtener contexts de rows binding:", e);
+                            aContexts = [];
+                        }
+                    }
+                }
+
+                const aExportData = [];
+                if (Array.isArray(aContexts) && aContexts.length > 0) {
+                    aContexts.forEach(ctx => {
+                        try {
+                            // ctx puede ser undefined en ciertos bindings; protegemos
+                            if (!ctx) return;
+                            const oObj = ctx.getObject ? ctx.getObject() : (ctx.getProperty ? ctx.getProperty("/") : null);
+                            if (!oObj) return;
+
+                            // Hacemos una copia shallow para no mutar el model original
+                            const row = Object.assign({}, oObj);
+
+                            // Transformar NotificationCreationDate y times
+                            row.NotificationCreationDate = parseToDate(row.NotificationCreationDate);
+                            row.NotificationCreationTime = parseTime(row.NotificationCreationTime)
+                            row.Time = parseTime(row.Time)
+
+                            aExportData.push(row);
+                        } catch (e) {
+                            console.error("Error procesando context:", e);
+                        }
+                    });
+                } else {
+                    console.warn("No se obtuvieron contexts desde la tabla. Verifica el binding y que la tabla tenga datos cargados.");
+                }
+
+                mExcelSettings.dataSource = {
+                    type: "array",
+                    data: aExportData
+                };
+
+
+                // Helper functions
+                function parseToDate(raw) {
+                    if (raw == null || raw === "") return null;
+                    if (raw instanceof Date) return isNaN(raw.getTime()) ? null : raw;
+
+                    if (typeof raw === "object" && raw.__text) raw = raw.__text;
+                    const s = String(raw).trim();
+
+                    // /Date(169...)/  --> extraer ms
+                    let m = /\/Date\((\d+)(?:[+-]\d+)?\)\//.exec(s);
+                    if (m) {
+                        const ms = parseInt(m[1], 10);
+                        return isNaN(ms) ? null : new Date(ms);
+                    }
+
+                    // milisegundos directos (número largo)
+                    if (/^\d{12,}$/.test(s)) {
+                        const ms = parseInt(s, 10);
+                        return isNaN(ms) ? null : new Date(ms);
+                    }
+
+                    // YYYYMMDD (ej: "20251017")
+                    if (/^\d{8}$/.test(s)) {
+                        const year = parseInt(s.slice(0, 4), 10);
+                        const month = parseInt(s.slice(4, 6), 10) - 1;
+                        const day = parseInt(s.slice(6, 8), 10);
+                        const d = new Date(year, month, day);
+                        return isNaN(d.getTime()) ? null : d;
+                    }
+
+                    // YYYY-MM-DD o YYYY/MM/DD
+                    m = /^(\d{4})[-\/](\d{2})[-\/](\d{2})/.exec(s);
+                    if (m) {
+                        const year = parseInt(m[1], 10);
+                        const month = parseInt(m[2], 10) - 1;
+                        const day = parseInt(m[3], 10);
+                        const d = new Date(year, month, day);
+                        return isNaN(d.getTime()) ? null : d;
+                    }
+
+                    // último recurso
+                    const d2 = new Date(s);
+                    return isNaN(d2.getTime()) ? null : d2;
+                }
+
+                // function parseTime(rawValue) {
+                //     if (rawValue instanceof Date) return rawValue;
+                //     // si viene como PT... la parseamos
+                //     if (typeof rawValue === "string" && rawValue.startsWith("PT")) {
+                //         return ptToDate(rawValue);
+                //     }
+
+                //     if (typeof rawValue === "string" && /^[0-2]?\d:/.test(rawValue)) {
+                //         const parts = rawValue.split(":");
+                //         return new Date(Date.UTC(1970, 0, 1, parseInt(parts[0], 10), parseInt(parts[1], 10), parseInt(parts[2] || "0", 10)));
+                //     }
+                //     return null;
+                // }
+
+                function parseTime(vMs) {
+                    if (vMs == null || vMs === "") {
+                        return "";
+                    }
+
+                    let ms = typeof vMs === "object" ? vMs.ms : vMs;
+                    if (isNaN(ms)) {
+                        return vMs;
+                    }
+
+                    // Pasar ms a horas, minutos, segundos
+                    let totalSeconds = Math.floor(ms / 1000);
+                    let hours = Math.floor(totalSeconds / 3600);
+                    let minutes = Math.floor((totalSeconds % 3600) / 60);
+                    let seconds = totalSeconds % 60;
+
+                    let hh = hours.toString().padStart(2, "0");
+                    let mm = minutes.toString().padStart(2, "0");
+                    let ss = seconds.toString().padStart(2, "0");
+
+                    return `${hh}:${mm}:${ss}`;
+                }
             }
         });
     });

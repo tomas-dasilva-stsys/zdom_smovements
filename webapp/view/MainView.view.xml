@@ -362,6 +362,7 @@
                     groupId="FILTERS"
                     key="NotificationCreationDate"
                     label="{i18n>notificationCreationDate}"
+                    visibleInAdvancedArea="true"
                     controlType="date"
                 >
                     <smartfilterbar:customControl>
@@ -379,23 +380,10 @@
                     groupId="FILTERS"
                     key="NotificationCreationTime"
                     label="{i18n>notificationCreationTime}"
+                    visibleInAdvancedArea="true"
                     controlType="dateTimePicker"
                 >
-                    <smartfilterbar:customControl>
-                        <TimePicker
-                            localeId=""
-                            mask=""
-                            placeholderSymbol=":"
-                            valueFormat="HH:mm:ss"
-                            displayFormat="HH:mm:ss"
-                        >
-                            <rules />
-                        </TimePicker>
-                        <!-- <DatePicker
-                            displayFormat="dd.MM.yyyy"
-                            valueFormat="yyyy-MM-ddThh:mm:ss"
-                        /> -->
-                    </smartfilterbar:customControl>
+                    
                 </smartfilterbar:ControlConfiguration>
             </smartfilterbar:controlConfiguration>
         </smartfilterbar:SmartFilterBar>
@@ -410,8 +398,8 @@
                 header="{i18n>header}"
                 smartFilterId="smartFilterBar"
                 entitySet="ScrapMovements"
-                initiallyVisibleFields="BlockedQuantity,ScrapQuantity,FreeQuantity,Reason,CostCenter,ProductionOrder,ProductionOperation,Time,Zuser,Component,Plant,WorkCenter,StorageLocation,DateFrom,SerialNumber,Element,Cause,RepairCode,Equipment,EquipmentDescription,DNIEquipment,NotificationCreationDate,NotificationCreationTime"
-                requestAtLeastFields="ProductionOrder,ProductionOperation,Charg,Component,ItemNumber,StorageLocation,NotificationType,NotificationNumber,SerialNumber,UnitOfMeasure,Plant,ReserveNumber,Quantity,Material,BomNumber,ReferenceNumber,Equipment,EquipmentDescription,DNIEquipment"
+                initiallyVisibleFields="BlockedQuantity,ScrapQuantity,FreeQuantity,Reason,CostCenter,ProductionOrder,ProductionOperation,Time,Zuser,Component,Plant,WorkCenter,StorageLocation,SerialNumber,Element,Cause,RepairCode,Equipment,EquipmentDescription,DNIEquipment,NotificationCreationDate,NotificationCreationTime"
+                requestAtLeastFields="ProductionOrder,ProductionOperation,Charg,Component,ItemNumber,StorageLocation,NotificationType,NotificationNumber,SerialNumber,UnitOfMeasure,Plant,ReserveNumber,Quantity,Material,BomNumber,ReferenceNumber,Equipment,EquipmentDescription,DNIEquipment,NotificationCreationDate"
                 height="100%"
                 persistencyKey="SmartTable_Explored"
                 beforeRebindTable="beforeRebind"
@@ -522,7 +510,8 @@
                             <customData>
                                 <core:CustomData
                                     key="p13nData"
-                                    value='\{"columnKey": "DateFrom", "leadingProperty": "DateFrom"}'
+                                    value='\{"columnKey": "DateFrom", "leadingProperty": "DateFrom", "sortProperty": "DateFrom",
+                                    "filterProperty": "DateFrom"}'
                                 />
                             </customData>
                             <Text
@@ -533,7 +522,8 @@
                             <customData>
                                 <core:CustomData
                                     key="p13nData"
-                                    value='\{"columnKey": "Time", "leadingProperty": "Time"}'
+                                    value='\{"columnKey": "Time", "leadingProperty": "Time", "sortProperty": "Time",
+                                    "filterProperty": "Time"}'
                                 />
                             </customData>
                             <Text
@@ -544,7 +534,9 @@
                             <customData>
                                 <core:CustomData
                                     key="p13nData"
-                                    value='\{"columnKey": "NotificationCreationDate", "leadingProperty": "NotificationCreationDate", "order": 99}'
+                                    value='\{"columnKey": "NotificationCreationDate", "leadingProperty": "NotificationCreationDate", "sortProperty": "NotificationCreationDate",
+                                    "filterProperty": "NotificationCreationDate",
+                                    "order": 99}'
                                 />
                             </customData>
                             <Text text="{i18n>notificationCreationDate}" />
@@ -553,7 +545,11 @@
                             <customData>
                                 <core:CustomData
                                     key="p13nData"
-                                    value='\{"columnKey": "NotificationCreationTime", "leadingProperty": "NotificationCreationTime", "order": 100}'
+                                    value='\{"columnKey": "NotificationCreationTime", "leadingProperty": "NotificationCreationTime",  "sortProperty": "NotificationCreationTime",
+                                    "filterProperty": "NotificationCreationTime",
+                                    "sortOrder": "Ascending",
+                                    "sorted": true,
+                                    "order": 100}'
                                 />
                             </customData>
                             <Text text="{i18n>notificationCreationTime}" />
