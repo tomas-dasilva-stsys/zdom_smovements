@@ -11,6 +11,7 @@ sap.ui.define([
     "zdomscrapmovements/services/MatchcodesService",
     "sap/m/MessageBox",
     "zdomscrapmovements/model/Formatter",
+    "sap/ui/export/Spreadsheet",
 ],
     function (Controller,
         JSONModel,
@@ -23,7 +24,8 @@ sap.ui.define([
         TransferService,
         MatchcodesService,
         MessageBox,
-        Formatter) {
+        Formatter,
+        Spreadsheet) {
         "use strict";
         let inputId;
         let currRowPosition;
@@ -64,6 +66,28 @@ sap.ui.define([
                 AppJsonModel.initializeModel();
                 let oView = this.getView();
                 let oModel = this.getOwnerComponent().getModel();
+                // let comboBoxModel = new JSONModel([
+                //     {
+                //         key: 1,
+                //         text: '10101101'
+                //     },
+                //     {
+                //         key: 2,
+                //         text: '10101201'
+                //     }
+                //     ,
+                //     {
+                //         key: 3,
+                //         text: '10101202'
+                //     }
+                //     ,
+                //     {
+                //         key: 4,
+                //         text: '10101203'
+                //     }
+                // ])
+                // oView.setModel(comboBoxModel, "testModel")
+
                 oView.setModel(oModel);
                 this._mDialogs = {};
 
@@ -1945,195 +1969,249 @@ sap.ui.define([
                 oMessagePopover.toggle(oEvent.getSource());
             },
 
-            onSmartTableBeforeExport: function (oEvent) {
-                const mExcelSettings = oEvent.getParameter("exportSettings");
+            onSmartTableExportPress: async function () {
+                try {
+                    const oSmartTable = this.byId("smartTable");
+                    const oInnerTable = oSmartTable.getTable();
+                    let oBinding = oInnerTable.getBinding("rows") || oInnerTable.getBinding("items");
 
-                function ptToDate(pt) {
-                    if (!pt) return null;
-                    const m = /PT(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?/.exec(pt);
-                    if (!m) return null;
-                    const h = parseInt(m[1] || "0", 10);
-                    const mm = parseInt(m[2] || "0", 10);
-                    const s = parseInt(m[3] || "0", 10);
-                    return new Date(Date.UTC(1970, 0, 1, h, mm, s));
-                }
-
-                mExcelSettings.workbook.columns.forEach(col => {
-                    if (col.property === "DateFrom") {
-                        col.type = sap.ui.export.EdmType.Date;
-                        col.format = "dd/mm/yyyy";
-                        col.formatter = function (rawValue) {
-                            const match = /Date\((\d+)\)/.exec(rawValue);
-                            if (!match) return null;
-
-                            return new Date(parseInt(match[1], 10));
-                        };
+                    if (!oBinding) {
+                        sap.m.MessageToast.show("No hay datos disponibles para exportar.");
+                        return;
                     }
 
-                    if (col.property === "NotificationCreationDate") {
-                        col.type = sap.ui.export.EdmType.Date;
-                        col.format = "dd/MM/yyyy"; // formato visible en Excel
-                    }
+                    sap.ui.core.BusyIndicator.show(0);
 
+                    // --- Asegurar carga completa ---
+                    const iTotal = oBinding.getLength();
 
-                    if (col.property === "Time" || col.property === "NotificationCreationTime") {
-                        col.type = sap.ui.export.EdmType.Time;
-                        col.format = "h:mm:ss"; // formato de salida en Excel
-                        // col.formatter = function (rawValue) {
-                        //     if (rawValue instanceof Date) return rawValue;
-                        //     // si viene como PT... la parseamos
-                        //     if (typeof rawValue === "string" && rawValue.startsWith("PT")) {
-                        //         return ptToDate(rawValue);
-                        //     }
-
-                        //     if (typeof rawValue === "string" && /^[0-2]?\d:/.test(rawValue)) {
-                        //         const parts = rawValue.split(":");
-                        //         return new Date(Date.UTC(1970, 0, 1, parseInt(parts[0], 10), parseInt(parts[1], 10), parseInt(parts[2] || "0", 10)));
-                        //     }
-                        //     return null;
-                        // };
-                    }
-                });
-
-                let oSmartTable = null;
-                // obtenemos la SmartTable:
-                oSmartTable = oEvent.getSource && oEvent.getSource();
-
-                const oInnerTable = oSmartTable.getTable(); // sap.ui.table.Table
-                let aContexts = [];
-
-                if (oInnerTable.getBinding) {
-                    const oBindingRows = oInnerTable.getBinding("items");
-                    if (oBindingRows && typeof oBindingRows.getContexts === "function") {
-                        // intentamos pedir todos los contexts; si no está disponible getLength, pedimos un rango razonable
-                        try {
-                            const iLength = oBindingRows.getLength && oBindingRows.getLength();
-                            if (typeof iLength === "number" && iLength > 0) {
-                                aContexts = oBindingRows.getContexts(0, iLength);
-                            } else {
-                                // getLength puede devolver -1 para OData; intentamos con un chunk grande
-                                aContexts = oBindingRows.getContexts(0, 10000); // ajustar si tenés >10000 filas
+                    if (iTotal > 1500) {
+                        await new Promise(resolve => {
+                            const fnHandler = () => {
+                                try { oBinding.detachDataReceived(fnHandler); } catch (e) { }
+                                resolve();
+                            };
+                            try { oBinding.attachDataReceived(fnHandler); } catch (e) { resolve(); }
+                            try {
+                                oBinding.getContexts(0, iTotal > 0 ? iTotal : 10000);
+                            } catch (e) {
+                                console.warn("getContexts lanzó excepción:", e);
+                                resolve();
                             }
-                        } catch (e) {
-                            console.error("Error al obtener contexts de rows binding:", e);
-                            aContexts = [];
-                        }
+                        });
                     }
-                }
 
-                const aExportData = [];
-                if (Array.isArray(aContexts) && aContexts.length > 0) {
+                    // --- Obtener todos los datos ---
+                    const aContexts = oBinding.getContexts(0, iTotal > 0 ? iTotal : 10000);
+                    const aExportData = [];
+
                     aContexts.forEach(ctx => {
-                        try {
-                            // ctx puede ser undefined en ciertos bindings; protegemos
-                            if (!ctx) return;
-                            const oObj = ctx.getObject ? ctx.getObject() : (ctx.getProperty ? ctx.getProperty("/") : null);
-                            if (!oObj) return;
+                        const oObj = ctx?.getObject?.();
+                        if (!oObj) return;
 
-                            // Hacemos una copia shallow para no mutar el model original
-                            const row = Object.assign({}, oObj);
+                        const row = { ...oObj };
 
-                            // Transformar NotificationCreationDate y times
-                            row.NotificationCreationDate = parseToDate(row.NotificationCreationDate);
-                            row.NotificationCreationTime = parseTime(row.NotificationCreationTime)
-                            row.Time = parseTime(row.Time)
+                        // Aplicar formatters
+                        row.NotificationCreationDate = parseToDate(row.NotificationCreationDate);
+                        row.NotificationCreationTime = parseTime(row.NotificationCreationTime);
+                        row.Time = parseTime(row.Time);
 
-                            aExportData.push(row);
-                        } catch (e) {
-                            console.error("Error procesando context:", e);
-                        }
+                        aExportData.push(row);
                     });
-                } else {
-                    console.warn("No se obtuvieron contexts desde la tabla. Verifica el binding y que la tabla tenga datos cargados.");
+
+                    const aColumns = this.getColumnsFromResponsiveTable(oInnerTable);
+
+                    // --- Configurar exportación ---
+                    const oExportSettings = {
+                        workbook: { columns: aColumns },
+                        dataSource: aExportData,
+                        fileName: "Export_ScrapMovements.xlsx"
+                    };
+
+                    // --- Generar Excel ---
+                    const oSheet = new Spreadsheet(oExportSettings);
+                    await oSheet.build();
+                    oSheet.destroy();
+                } catch (error) {
+                    console.error("Error en exportación:", error);
+                    sap.m.MessageToast.show("Error en exportación: " + error.message);
+                } finally {
+                    sap.ui.core.BusyIndicator.hide();
                 }
 
-                mExcelSettings.dataSource = {
-                    type: "array",
-                    data: aExportData
-                };
+                // === Helpers ===
 
-
-                // Helper functions
                 function parseToDate(raw) {
                     if (raw == null || raw === "") return null;
                     if (raw instanceof Date) return isNaN(raw.getTime()) ? null : raw;
 
-                    if (typeof raw === "object" && raw.__text) raw = raw.__text;
                     const s = String(raw).trim();
-
-                    // /Date(169...)/  --> extraer ms
                     let m = /\/Date\((\d+)(?:[+-]\d+)?\)\//.exec(s);
-                    if (m) {
-                        const ms = parseInt(m[1], 10);
-                        return isNaN(ms) ? null : new Date(ms);
-                    }
+                    if (m) return new Date(parseInt(m[1], 10));
 
-                    // milisegundos directos (número largo)
-                    if (/^\d{12,}$/.test(s)) {
-                        const ms = parseInt(s, 10);
-                        return isNaN(ms) ? null : new Date(ms);
-                    }
-
-                    // YYYYMMDD (ej: "20251017")
                     if (/^\d{8}$/.test(s)) {
                         const year = parseInt(s.slice(0, 4), 10);
                         const month = parseInt(s.slice(4, 6), 10) - 1;
                         const day = parseInt(s.slice(6, 8), 10);
-                        const d = new Date(year, month, day);
-                        return isNaN(d.getTime()) ? null : d;
+                        return new Date(year, month, day);
                     }
 
-                    // YYYY-MM-DD o YYYY/MM/DD
                     m = /^(\d{4})[-\/](\d{2})[-\/](\d{2})/.exec(s);
-                    if (m) {
-                        const year = parseInt(m[1], 10);
-                        const month = parseInt(m[2], 10) - 1;
-                        const day = parseInt(m[3], 10);
-                        const d = new Date(year, month, day);
-                        return isNaN(d.getTime()) ? null : d;
-                    }
+                    if (m) return new Date(parseInt(m[1], 10), parseInt(m[2], 10) - 1, parseInt(m[3], 10));
 
-                    // último recurso
                     const d2 = new Date(s);
                     return isNaN(d2.getTime()) ? null : d2;
                 }
 
-                // function parseTime(rawValue) {
-                //     if (rawValue instanceof Date) return rawValue;
-                //     // si viene como PT... la parseamos
-                //     if (typeof rawValue === "string" && rawValue.startsWith("PT")) {
-                //         return ptToDate(rawValue);
-                //     }
-
-                //     if (typeof rawValue === "string" && /^[0-2]?\d:/.test(rawValue)) {
-                //         const parts = rawValue.split(":");
-                //         return new Date(Date.UTC(1970, 0, 1, parseInt(parts[0], 10), parseInt(parts[1], 10), parseInt(parts[2] || "0", 10)));
-                //     }
-                //     return null;
-                // }
-
                 function parseTime(vMs) {
-                    if (vMs == null || vMs === "") {
-                        return "";
-                    }
-
+                    if (vMs == null || vMs === "") return "";
                     let ms = typeof vMs === "object" ? vMs.ms : vMs;
-                    if (isNaN(ms)) {
-                        return vMs;
+                    if (typeof ms === "string" && ms.startsWith("PT")) {
+                        // formato OData PTxxHxxMxxS
+                        const regex = /PT(\d+)H(\d+)M(\d+)S/;
+                        const match = regex.exec(ms);
+                        if (match) {
+                            const [_, h, m, s] = match;
+                            return `${h.padStart(2, "0")}:${m.padStart(2, "0")}:${s.padStart(2, "0")}`;
+                        }
                     }
-
-                    // Pasar ms a horas, minutos, segundos
+                    if (isNaN(ms)) return vMs;
                     let totalSeconds = Math.floor(ms / 1000);
                     let hours = Math.floor(totalSeconds / 3600);
                     let minutes = Math.floor((totalSeconds % 3600) / 60);
                     let seconds = totalSeconds % 60;
-
-                    let hh = hours.toString().padStart(2, "0");
-                    let mm = minutes.toString().padStart(2, "0");
-                    let ss = seconds.toString().padStart(2, "0");
-
-                    return `${hh}:${mm}:${ss}`;
+                    return `${hours.toString().padStart(2, "0")}:${minutes
+                        .toString()
+                        .padStart(2, "0")}:${seconds.toString().padStart(2, "0")}`;
                 }
+            },
+
+            // getColumnsFromResponsiveTable: function (oInnerTable) {
+            //     const aColumns = [];
+
+            //     oInnerTable.getColumns().forEach(col => {
+            //         let sLabel = "";
+            //         let sProperty = "";
+
+            //         // === Obtener label ===
+            //         const oHeader = col.getHeader && col.getHeader();
+            //         if (oHeader) {
+            //             if (typeof oHeader.getText === "function") {
+            //                 sLabel = oHeader.getText();
+            //             } else if (typeof oHeader === "string") {
+            //                 sLabel = oHeader;
+            //             }
+            //         }
+
+            //         // === Obtener property desde customData (p13nData) ===
+            //         const aCustomData = col.getCustomData && col.getCustomData();
+            //         if (Array.isArray(aCustomData)) {
+            //             aCustomData.forEach(cd => {
+            //                 const key = cd.getKey && cd.getKey();
+            //                 if (key === "p13nData") {
+            //                     try {
+            //                         const v = cd.getValue();
+            //                         const parsed = typeof v === "string" ? JSON.parse(v) : v;
+            //                         if (parsed && (parsed.leadingProperty || parsed.columnKey)) {
+            //                             sProperty = parsed.leadingProperty || parsed.columnKey;
+            //                         }
+            //                     } catch (e) {
+            //                         console.warn("Error parseando p13nData:", e);
+            //                     }
+            //                 }
+            //             });
+            //         }
+
+            //         if (!sProperty) return;
+
+            //         aColumns.push({
+            //             label: sLabel || sProperty,
+            //             property: sProperty,
+            //             type: this.deduceColumnType(sProperty)
+            //         });
+            //     });
+
+            //     return aColumns;
+            // },
+
+            getColumnsFromResponsiveTable: function (oInnerTable) {
+                const aColumns = [];
+
+                oInnerTable.getColumns().forEach(col => {
+                    let sLabel = "";
+                    let sProperty = "";
+
+                    // === Obtener label ===
+                    const oHeader = col.getHeader && col.getHeader();
+                    if (oHeader) {
+                        if (typeof oHeader.getText === "function") {
+                            sLabel = oHeader.getText();
+                        } else if (typeof oHeader === "string") {
+                            sLabel = oHeader;
+                        }
+                    }
+
+                    // === Obtener property desde customData (p13nData) ===
+                    const aCustomData = col.getCustomData && col.getCustomData();
+                    if (Array.isArray(aCustomData)) {
+                        aCustomData.forEach(cd => {
+                            const key = cd.getKey && cd.getKey();
+                            if (key === "p13nData") {
+                                try {
+                                    const v = cd.getValue();
+                                    const parsed = typeof v === "string" ? JSON.parse(v) : v;
+                                    if (parsed && (parsed.leadingProperty || parsed.columnKey)) {
+                                        sProperty = parsed.leadingProperty || parsed.columnKey;
+                                    }
+                                } catch (e) {
+                                    console.warn("Error parseando p13nData:", e);
+                                }
+                            }
+                        });
+                    }
+
+                    if (!sProperty) return;
+
+                    // === Determinar tipo de columna y formato ===
+                    const oColDef = {
+                        label: sLabel || sProperty,
+                        property: sProperty,
+                        width: 20
+                    };
+
+                    // === Números: 3 primeras columnas + Quantity ===
+                    if (["BlockedQuantity", "ScrapQuantity", "FreeQuantity", "Quantity"].includes(sProperty)) {
+                        oColDef.type = sap.ui.export.EdmType.Number;
+                        oColDef.scale = 3; // mostrar 3 decimales fijos (puedes cambiarlo a 2)
+                        oColDef.delimiter = true; // separador de miles
+                    }
+
+                    // === Fechas ===
+                    if (["DateFrom", "NotificationCreationDate"].includes(sProperty)) {
+                        oColDef.type = sap.ui.export.EdmType.Date;
+                    }
+
+                    // === Horas ===
+                    if (["Time", "NotificationCreationTime"].includes(sProperty)) {
+                        oColDef.type = sap.ui.export.EdmType.Time;
+                    }
+
+                    aColumns.push(oColDef);
+                });
+
+                return aColumns;
+            },
+
+            // === Tipado básico según nombre del campo ===
+            deduceColumnType: function (prop) {
+                if (/date/i.test(prop)) return sap.ui.export.EdmType.Date;
+                if (/time/i.test(prop)) return sap.ui.export.EdmType.String;
+                if (/qty|quantity|amount|number|value/i.test(prop)) return sap.ui.export.EdmType.Number;
+                return sap.ui.export.EdmType.String;
+            },
+
+            onDiscardLinesButtonPress: function (oEvent) {
+
             }
         });
     });

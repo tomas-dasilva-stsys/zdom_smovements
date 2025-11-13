@@ -382,9 +382,7 @@
                     label="{i18n>notificationCreationTime}"
                     visibleInAdvancedArea="true"
                     controlType="dateTimePicker"
-                >
-                    
-                </smartfilterbar:ControlConfiguration>
+                />
             </smartfilterbar:controlConfiguration>
         </smartfilterbar:SmartFilterBar>
 
@@ -404,8 +402,8 @@
                 persistencyKey="SmartTable_Explored"
                 beforeRebindTable="beforeRebind"
                 enableAutoColumnWidth="true"
-                beforeExport="onSmartTableBeforeExport"
                 exportType="UI5Client"
+                enableExport="false"
             >
                 <smarttable:layoutData>
                     <FlexItemData
@@ -417,6 +415,15 @@
                 <smarttable:customToolbar>
                     <Toolbar id="_IDGenToolbar">
                         <ToolbarSpacer id="_IDGenToolbarSpacer" />
+                        <Button
+                            id="discardLines"
+                            type="Reject"
+                            enabled="false"
+                            text="{i18n>discardLines}"
+                            icon="sap-icon://delete"
+                            visible="false"
+                            press="onDiscardLinesButtonPress"
+                        />
                         <Button
                             id="scrapToFreeBtn"
                             type="Accept"
@@ -434,6 +441,10 @@
                             enabled="false"
                             tooltip="{i18n>massFill}"
                             text="{i18n>massFillText}"
+                        />
+                        <Button
+                            press=".onSmartTableExportPress"
+                            icon="sap-icon://excel-attachment"
                         />
                     </Toolbar>
                 </smarttable:customToolbar>
@@ -595,6 +606,19 @@
                                     change="onReasonChange"
                                     maxLength="4"
                                 />
+
+                                <!-- COMBOBOX OPTION -->
+                                <!-- <ComboBox
+                                    items="{
+                                        path: 'testModel>/',
+                                        sorter: {path: 'testModel>text'}
+                                    }"
+                                >
+                                    <core:Item
+                                        key="{key}"
+                                        text="{testModel>text}"
+                                    />
+                                </ComboBox> -->
                             </cells>
                             <cells>
                                 <Input
@@ -606,6 +630,19 @@
                                     valueStateText="{i18n>costCenterRequired}"
                                     change="onCostCenterChange"
                                 />
+
+                                <!-- COMBOBOX OPTION -->
+                                <!-- <ComboBox
+                                    items="{
+                                        path: 'testModel>/',
+                                        sorter: {path: 'testModel>text'}
+                                    }"
+                                >
+                                    <core:Item
+                                        key="{key}"
+                                        text="{testModel>text}"
+                                    />
+                                </ComboBox> -->
                             </cells>
                             <cells>
                                 <Text
