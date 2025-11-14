@@ -2019,7 +2019,7 @@ sap.ui.define([
                         aExportData.push(row);
                     });
 
-                    const aColumns = this.getColumnsFromResponsiveTable(oInnerTable);
+                    const aColumns = this.getColumnsFromTable(oInnerTable);
 
                     // --- Configurar exportación ---
                     const oExportSettings = {
@@ -2134,10 +2134,16 @@ sap.ui.define([
             //     return aColumns;
             // },
 
-            getColumnsFromResponsiveTable: function (oInnerTable) {
+            getColumnsFromTable: function (oInnerTable) {
+                
+                // Obtener columnas ordenadas según como se ven en pantalla
+                const aUIColumns = oInnerTable.getColumns()
+                .slice()
+                .sort((a, b) => a.getOrder() - b.getOrder());
+                
                 const aColumns = [];
-
-                oInnerTable.getColumns().forEach(col => {
+                
+                aUIColumns.forEach((col, index) => {
                     let sLabel = "";
                     let sProperty = "";
 
@@ -2170,7 +2176,11 @@ sap.ui.define([
                         });
                     }
 
-                    if (!sProperty) return;
+                    // === Si la columna no tiene propiedad, igual se reserva su posición ===
+                    if (!sProperty) {
+                        aColumns[index] = null; // mantener orden
+                        return;
+                    }
 
                     // === Determinar tipo de columna y formato ===
                     const oColDef = {
@@ -2187,7 +2197,7 @@ sap.ui.define([
                     }
 
                     // === Fechas ===
-                    if (["DateFrom", "NotificationCreationDate"].includes(sProperty)) {
+                    if (["DateFrom", "DateTo", "NotificationCreationDate"].includes(sProperty)) {
                         oColDef.type = sap.ui.export.EdmType.Date;
                     }
 
