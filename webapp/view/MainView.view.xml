@@ -402,7 +402,6 @@
                 persistencyKey="SmartTable_Explored"
                 beforeRebindTable="beforeRebind"
                 enableAutoColumnWidth="true"
-                exportType="UI5Client"
                 enableExport="false"
             >
                 <smarttable:layoutData>
