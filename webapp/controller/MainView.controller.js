@@ -66,31 +66,11 @@ sap.ui.define([
                 AppJsonModel.initializeModel();
                 let oView = this.getView();
                 let oModel = this.getOwnerComponent().getModel();
-                // let comboBoxModel = new JSONModel([
-                //     {
-                //         key: 1,
-                //         text: '10101101'
-                //     },
-                //     {
-                //         key: 2,
-                //         text: '10101201'
-                //     }
-                //     ,
-                //     {
-                //         key: 3,
-                //         text: '10101202'
-                //     }
-                //     ,
-                //     {
-                //         key: 4,
-                //         text: '10101203'
-                //     }
-                // ])
-                // oView.setModel(comboBoxModel, "testModel")
 
                 oView.setModel(oModel);
                 this._mDialogs = {};
                 this._exportFilters;
+                this._mMassChanges = {};
 
                 let pop_msgModel = new sap.ui.model.json.JSONModel({
                     "messageLength": '',
@@ -102,111 +82,27 @@ sap.ui.define([
                 oMessagePopover.setModel(popModel);
                 this._localChangesModel = new sap.ui.model.json.JSONModel({});
                 this.getView().setModel(this._localChangesModel, "localChanges");
-                // const oTable = this.byId('smartTable').getTable();
-
-                const oSmartFilterBar = this.byId("smartFilterBar");
-
-                // fallback por si 'initialise' no llega a dispararse por alguna razón
-                // setTimeout(() => this._ensureColumnsLast(oSmart), 500);
-            },
-
-            // _ensureColumnsLast: function (oSmartTable) {
-            //     const fnMove = () => {
-            //         const oTable = oSmartTable.getTable(); // tabla interna (sap.m.Table)
-            //         if (!oTable) return false;
-
-            //         const aCols = oTable.getColumns();
-            //         const aKeysToMove = ["NotificationCreationDate", "NotificationCreationTime"];
-
-            //         // helper: devuelve el objeto p13nData si existe
-            //         const getP13n = (oCol) => {
-            //             const aCD = oCol.getCustomData ? oCol.getCustomData() : [];
-            //             const o = aCD.find(cd => cd.getKey && cd.getKey() === "p13nData");
-            //             if (!o) return null;
-            //             try { return JSON.parse(o.getValue()); } catch (e) { return null; }
-            //         };
-
-            //         // mover cada columna encontrada al final
-            //         aKeysToMove.forEach(sKey => {
-            //             const oCol = aCols.find(col => {
-            //                 const oP = getP13n(col);
-            //                 return oP && (oP.columnKey === sKey || oP.leadingProperty === sKey || oP.name === sKey);
-            //             });
-            //             if (oCol) {
-            //                 // quita y vuelve a añadir al final (preserva la instancia)
-            //                 oTable.removeAggregation("columns", oCol, true);
-            //                 oTable.addAggregation("columns", oCol, true);
-            //             }
-            //         });
-
-            //         // re-render para forzar actualización visual
-            //         oTable.rerender();
-            //         return true;
-            //     };
-
-            //     // intenta mover ahora, y si no está la tabla, prueba con polling corto
-            //     if (!fnMove()) {
-            //         let i = 0;
-            //         const iMax = 20;
-            //         const iHandle = setInterval(() => {
-            //             i++;
-            //             if (fnMove() || i >= iMax) clearInterval(iHandle);
-            //         }, 150);
-            //     }
-            // },
-
-            restoreLocalChanges: function () {
-                let oTable = this.byId("smartTable").getTable();
-                let oModel = oTable.getModel();
-                let localChangesModel = this.getModel('localChanges');
-                let oLocalChanges = localChangesModel.getData();
-
-                for (let sPath in oLocalChanges) {
-                    let oChanges = oLocalChanges[sPath];
-                    for (let sField in oChanges) {
-                        oModel.setProperty(sPath + "/" + sField, oChanges[sField]);
-                    }
-                }
-            },
-
-            onAllRowsLoaded: function () {
-                const oTable = this.byId('smartTable').getTable();
-                let aColumns = oTable.getColumns();
-
-                aColumns.forEach(function (oColumn) {
-                    let sProperty = oColumn.getFilterProperty();
-                    oColumn.setWidth('150px');
-
-                    if (["ScrapQuantity", "FreeQuantity", "Reason", "CostCenter"].includes(sProperty)) {
-                        oColumn.setTemplate(new sap.m.Input({
-                            id: `${sProperty + '-' + Math.random().toString(36)}`,
-                            value: `{${sProperty}}`,
-                            maxLength: 5,
-                            liveChange: this.onInputChange,
-                            type: sProperty === "Reason" || sProperty === "CostCenter" ? "Text" : "Number",
-                            showValueHelp: sProperty === "Reason" || sProperty === "CostCenter",
-                            valueHelpRequest: this.onValueHelpRequestInputsTable.bind(this),
-                            change: sProperty === 'ScrapQuantity' || sProperty === 'FreeQuantity' ? this.onFormatValue.bind(this) : ''
-                        }));
-                    }
-                }.bind(this));
-
-                this.restoreLocalChanges();
             },
 
             onInputChange: function (oEvent) {
-                let localChangesModel = this.getModel('localChanges');
-                let oInput = oEvent.getSource();
-                let oContext = oInput.getBindingContext();
-                let sPath = oContext.getPath(); // ejemplo: /ScrapMovements(1)
-                let sField = oInput.getBindingInfo("value").parts[0].path;
-                let sKey = sPath; // Puedes usar otro identificador único si prefieres
+                const oInput = oEvent.getSource();
+                const oCtx = oInput.getBindingContext();
 
-                let oLocalChanges = localChangesModel.getProperty("/") || {};
-                oLocalChanges[sKey] = oLocalChanges[sKey] || {};
-                oLocalChanges[sKey][sField] = oEvent.getParameter("value");
+                if (!oCtx) return;
 
-                localChangesModel.setProperty("/", oLocalChanges);
+                const sPath = oCtx.getPath();
+                const oModel = oCtx.getModel();
+
+
+                // Nombre del campo desde el ID del input
+                const sProp =
+                    oInput.getId().includes('CostCenter') ? 'CostCenter' :
+                        oInput.getId().includes('Reason') ? 'Reason' :
+                            null;
+
+                if (!sProp) return;
+
+                oModel.setProperty(sPath + "/" + sProp, oInput.getValue());
             },
 
             onSmartFilterBarAfterVariantSave: function (oEvent) {
@@ -297,7 +193,7 @@ sap.ui.define([
                     'Material': { path: '/MatchCodeMaterialScrapMov' },
                     'StorageLocation': { path: '/MatchCodeLocationScrapMov' },
                     'Reason': { path: '/MatchCodeReason' },
-                    'CostCenter': { path: '/MatchCodeCostCenter' },
+                    'CostCenter': { path: '/MatchCodePlant' },
                     'WorkCenter': { path: '/MatchCodeWorkCenterScrapMov' },
                     'Plant': { path: '/MatchCodePlantScrapMov' },
                     'ProductionOrder': { path: '/MatchCodeProdOrderScrapMov' },
@@ -539,18 +435,30 @@ sap.ui.define([
             beforeRebind: function (oEvent) {
                 // getting table control
                 const oTable = this.byId('table');
+                const oBinding = oTable?.getBinding("items") || oTable?.getBinding("rows");
                 // getting table items
                 let tableItems = oTable.getItems();
                 // setting regEx
                 let regEx = /--([a-zA-Z]+)--([a-zA-Z]+)/;
 
-                // getting filters controls
-                let mBindingParams = oEvent.getParameter("bindingParams");
 
                 // reset filters
-                if(this._exportFilters) {
+                if (oBinding) {
+                    const oModel = oBinding.getModel();
+
+                    oModel.resetChanges();
+                }
+
+                if (this._exportFilters) {
                     this._exportFilters = [];
                 }
+
+                if (this._mMassChanges) {
+                    this._mMassChanges = {}
+                }
+
+                // getting filters controls
+                let mBindingParams = oEvent.getParameter("bindingParams");
 
                 let oSmtFilter = this.getView().byId("smartFilterBar");
                 let dateFrom = oSmtFilter.getControlByKey("DateFrom");
@@ -719,6 +627,7 @@ sap.ui.define([
                     return;
                 }
 
+                oTable.removeSelections(true);
             },
 
             beforeRebindUiTable: function (oEvent) {
@@ -1301,7 +1210,12 @@ sap.ui.define([
                 let reasonInput = this.byId("MassFill-Reason");
                 let costCenterInput = this.byId("MassFill-CostCenter");
 
-                let currValue = oEvent.getParameter("tokens")[0].getKey();
+                let currValue;
+
+                inputId === 'CostCenter'
+                    ? currValue = oEvent.getParameter("tokens")[0].getCustomData()[0].getValue().costcenter
+                    : currValue = oEvent.getParameter("tokens")[0].getKey()
+
 
                 if (inputId === 'Reason') {
                     reasonInput.setValue(currValue);
@@ -1319,56 +1233,44 @@ sap.ui.define([
             },
 
             onConfirmMassFillAction: function (oEvent) {
-                const that = this;
-                const oTable = this.byId('table');
-                const oResourceBundle = this.getView().getModel("i18n").getResourceBundle();
-                const regex = /--([a-zA-Z]+)--([a-zA-Z]+)/;
-                const reasonInput = this.byId('MassFill-Reason');
-                const costCenterInput = this.byId('MassFill-CostCenter');
-                const selecteditems = oTable.getSelectedItems();
+                // const that = this;
+                // const oResourceBundle = this.getView().getModel("i18n").getResourceBundle();
 
-                // text messages
-                // const confirmActionMsg = oResourceBundle.getText("confirmMsg")
-                // const confirmActionTitle = oResourceBundle.getText("confirmActionTitle")
+                // selecteditems.forEach(item => {
+                //     item.getCells().filter(cell => cell.getId().match(regex)).filter(item => item.sId.includes('Reason'))[0].setValue(reasonInput.getValue().trim());
 
-
-                // if (!reasonInput.getValue().trim() && !costCenterInput.getValue().trim()) {
-                //     reasonInput.setValueState('Error');
-                //     costCenterInput.setValueState('Error');
-                //     return;
-                // }
-
-                // MessageBox.confirm(confirmActionMsg, {
-                //     title: confirmActionTitle,
-                //     actions: [MessageBox.Action.OK, MessageBox.Action.CANCEL],
-                //     emphasizedAction: MessageBox.Action.OK,
-                //     onClose: function (sAction) {
-                //         if (sAction === 'OK') {
-                //             // if (reasonInput.getValue().trim()) {
-                //             //     selecteditems.forEach(item => {
-                //             //         item.getCells().filter(cell => cell.getId().match(regex)).filter(item => item.sId.includes('Reason'))[0].setValue(reasonInput.getValue());
-                //             //     })
-                //             // }
-
-                //             // if (costCenterInput.getValue().trim()) {
-                //             //     selecteditems.forEach(item => {
-                //             //         item.getCells().filter(cell => cell.getId().match(regex)).filter(item => item.sId.includes('CostCenter'))[0].setValue(costCenterInput.getValue());
-                //             //     })
-                //             // }
-
-                //             that.destroyFragments();
-                //         }
-                //     }
+                //     item.getCells().filter(cell => cell.getId().match(regex)).filter(item => item.sId.includes('CostCenter'))[0].setValue(costCenterInput.getValue().trim());
                 // })
 
+                // that.destroyFragments();
+                // const regex = /--([a-zA-Z]+)--([a-zA-Z]+)/;
 
-                selecteditems.forEach(item => {
-                    item.getCells().filter(cell => cell.getId().match(regex)).filter(item => item.sId.includes('Reason'))[0].setValue(reasonInput.getValue().trim());
+                const oTable = this.byId('table');
+                const oModel = oTable.getModel();
+                const sReason = this.byId('MassFill-Reason').getValue().trim();
+                const sCostCenter = this.byId('MassFill-CostCenter').getValue().trim();
+                const aItems = oTable.getSelectedItems();
 
-                    item.getCells().filter(cell => cell.getId().match(regex)).filter(item => item.sId.includes('CostCenter'))[0].setValue(costCenterInput.getValue().trim());
-                })
+                aItems.forEach(item => {
+                    const oCtx = item.getBindingContext();
+                    if (!oCtx) return;
 
-                that.destroyFragments();
+                    const sPath = oCtx.getPath();
+
+                    this._mMassChanges[sPath] = {
+                        ...(this._mMassChanges[sPath] || {}),
+                        Reason: sReason,
+                        CostCenter: sCostCenter
+                    };
+
+                    // UI inmediata (rápida)
+                    item.getCells().forEach(c => {
+                        if (c.getId().includes("Reason")) c.setValue(sReason);
+                        if (c.getId().includes("CostCenter")) c.setValue(sCostCenter);
+                    });
+                });
+
+                this.destroyFragments();
             },
 
             // SAP.UI.TABLE VARIANT
@@ -1536,31 +1438,37 @@ sap.ui.define([
             onValueHelpOkPress: function (oEvent) {
                 const oTable = this.byId('table');
                 const regex = /--([a-zA-Z]+)--([a-zA-Z]+)/;
+                let currValue;
 
-                let currValue = oEvent.getParameter("tokens")[0].getKey();
+                inputId === 'CostCenter'
+                    ? currValue = oEvent.getParameter("tokens")[0].getCustomData()[0].getValue().costcenter
+                    : currValue = oEvent.getParameter("tokens")[0].getKey();
+
                 let rowSelected = oTable.getItems()[currRowPosition];
                 let tokensSelected = oEvent.getParameter('tokens').map(token => ({ key: token.getKey(), text: token.getText() }));
+                let oCtx = rowSelected.getBindingContext();
 
+                if (!oCtx) {
+                    this.onExitDialog();
+                    return;
+                }
 
-                // if (inputId === 'ProductionOrder') {
-                //     // let productionOrTokens = AppJsonModel.getProperty('/FilterValues').ProductionOrder;
-                //     AppJsonModel.setInnerProperty('/FilterValues', 'ProductionOrder', tokensSelected);
-                //     let currMaterial = oEvent.getParameter("tokens")[0].getCustomData()[0].getValue().Material;
-                //     // this.byId(inputId).setValue(currValue);
-                //     // this.byId(inputId).setTokens(tokensSelected);
-                //     // this.byId('Material').setValue(currMaterial);
-                //     this.onExitDialog();
-                //     return;
-                // }
+                const oModel = oCtx.getModel();
+                const sRowPath = oCtx.getPath();
+                oModel.setProperty(`${sRowPath}/${inputId}`, currValue);
+
+                const oInput = rowSelected.getCells().find(c => c.getId().includes(inputId));
+
+                if (oInput) {
+                    oInput.setValueState("None");
+                }
+
 
                 if (inputId !== 'Reason' && inputId !== 'CostCenter') {
                     AppJsonModel.setInnerProperty('/FilterValues', inputId, tokensSelected);
                     this.onExitDialog();
                     return;
                 }
-
-                rowSelected.getCells().filter(cell => cell.getId().includes(inputId))[0].setValue(currValue);
-                rowSelected.getCells().filter(cell => cell.getId().includes(inputId))[0].setValueState("None");
 
                 this.onExitDialog();
             },
@@ -1915,22 +1823,46 @@ sap.ui.define([
             },
 
             onCostCenterChange: function (oEvent) {
-                const oTable = this.byId('table');
-                const regEx = /--([a-zA-Z]+)--([a-zA-Z]+)/;
+                const oInput = oEvent.getSource();
+                const oCtx = oInput.getBindingContext();
 
-                let filteredItems = oTable.getItems().filter(item => item.sId.includes("MainView"));
-                let currValue = oEvent.getParameter("value");
-                let currInputPosition = oEvent.getSource().getId().split('-').pop();
-                let currentRow = filteredItems[currInputPosition];
+                if (!oCtx) return;
 
-                if (!currValue.trim()) return;
+                const sPath = oCtx.getPath();
+                const oModel = oCtx.getModel();
 
-                if (currValue) {
-                    currentRow.getCells().filter(cell => cell.getId().match(regEx)[2] === 'CostCenter')[0].setValueState('None');
-                }
+
+                // Nombre del campo desde el ID del input
+                const sProp =
+                    oInput.getId().includes("scrapQty") ? "ScrapQuantity" :
+                        oInput.getId().includes("freeQty") ? "FreeQuantity" :
+                            oInput.getId().includes('CostCenter') ? 'CostCenter' :
+                                oInput.getId().includes('Reason') ? 'Reason' :
+                                    null;
+
+                if (!sProp) return;
+
+                oModel.setProperty(sPath + "/" + sProp, oInput.getValue());
             },
 
             onFormatValue: function (oEvent) {
+                const oInput = oEvent.getSource();
+                const oCtx = oInput.getBindingContext();
+
+                if (!oCtx) return;
+
+                const sPath = oCtx.getPath();
+                const oModel = oCtx.getModel();
+
+
+                // Nombre del campo desde el ID del input
+                const sProp =
+                    oInput.getId().includes("scrapQty") ? "ScrapQuantity" :
+                        oInput.getId().includes("freeQty") ? "FreeQuantity" :
+                            null;
+
+                if (!sProp) return;
+
                 let currValue = oEvent.getSource().getValue();
 
                 if (currValue.trim() === '') {
@@ -1940,8 +1872,8 @@ sap.ui.define([
                 }
 
                 let parseValue = parseFloat(currValue);
-                oEvent.getSource().setValue(parseValue.toFixed(3));
-
+                oModel.setProperty(sPath + "/" + sProp, parseValue.toFixed(3));
+                // oEvent.getSource().setValue(parseValue.toFixed(3));
             },
 
             handleOpenDialog: function () {
@@ -2217,51 +2149,246 @@ sap.ui.define([
 
             },
 
+            // onSmartTableExportPress: async function () {
+            //     let that = this;
+
+            //     try {
+            //         const oSmartTable = this.byId("smartTable");
+            //         const oSmartFilterBar = this.byId("smartFilterBar");
+            //         const oInnerTable = oSmartTable.getTable();
+            //         let oBinding = oInnerTable.getBinding("rows") || oInnerTable.getBinding("items");
+
+
+            //         if (!oBinding) {
+            //             sap.m.MessageToast.show("No hay datos disponibles para exportar.");
+            //             return;
+            //         }
+
+
+
+            //         sap.ui.core.BusyIndicator.show(0);
+
+            //         // ========= Obtener modelo, path, filtros y sorters =========
+            //         const oModel = oBinding.getModel();
+            //         const sPath = oBinding.getPath();
+            //         const aFilters = this._exportFilters || [];
+            //         // ========= Traer TODOS los datos del backend, en páginas =========
+            //         const aExportDataRaw = await fetchAllData(oModel, sPath, aFilters);
+
+            //         // ========= Aplicar formatters =========
+            //         const aExportData = aExportDataRaw.map((oObj, index) => {
+            //             return {
+            //                 ...oObj,
+            //                 NotificationCreationDate: parseToDate(oObj.NotificationCreationDate),
+            //                 NotificationCreationTime: parseTime(oObj.NotificationCreationTime),
+            //                 // ScrapQuantity: parseInputsData(index, 'scrapQty'),
+            //                 // FreeQuantity: parseInputsData(index, 'freeQty'),
+            //                 // Reason: parseInputsData(index, 'Reason'),
+            //                 // CostCenter: parseInputsData(index, 'CostCenter'),
+            //                 Time: parseTime(oObj.Time)
+            //             };
+            //         });
+
+            //         // ========= Columnas del Excel =========
+            //         const aColumns = this.getColumnsFromTable(oInnerTable);
+
+            //         // ========= Exportación =========
+            //         const oExportSettings = {
+            //             workbook: { columns: aColumns },
+            //             dataSource: aExportData,
+            //             fileName: "Export_ScrapMovements.xlsx"
+            //         };
+
+            //         const oSheet = new Spreadsheet(oExportSettings);
+            //         await oSheet.build();
+            //         oSheet.destroy();
+
+            //     } catch (error) {
+            //         console.error("Error en exportación:", error);
+            //         sap.m.MessageToast.show("Error en exportación: " + error.message);
+            //     } finally {
+            //         sap.ui.core.BusyIndicator.hide();
+            //     }
+
+            //     // ============================================================
+            //     // =============== Helpers Internos ============================
+            //     // ============================================================
+
+            //     async function fetchAllData(oModel, sEntitySet, aFilters) {
+            //         const pageSize = 10000;
+            //         let skip = 0;
+            //         let allResults = [];
+            //         let keepLoading = true;
+
+            //         while (keepLoading) {
+            //             const oParams = {
+            //                 $skip: skip,
+            //                 $top: pageSize
+            //             };
+
+            //             const chunk = await new Promise((resolve, reject) => {
+            //                 oModel.read(sEntitySet, {
+            //                     filters: aFilters,
+            //                     urlParameters: oParams,
+            //                     success: oData => resolve(oData.results || []),
+            //                     error: reject
+            //                 });
+            //             });
+
+            //             allResults = allResults.concat(chunk);
+
+            //             if (chunk.length < pageSize) {
+            //                 keepLoading = false;      // Última página
+            //             } else {
+            //                 skip += pageSize;         // Siguiente batch
+            //             }
+            //         }
+
+            //         return allResults;
+            //     }
+
+            //     function parseToDate(raw) {
+            //         if (raw == null || raw === "") return null;
+            //         if (raw instanceof Date) return isNaN(raw.getTime()) ? null : raw;
+
+            //         const s = String(raw).trim();
+            //         let m = /\/Date\((\d+)(?:[+-]\d+)?\)\//.exec(s);
+            //         if (m) return new Date(parseInt(m[1], 10));
+
+            //         if (/^\d{8}$/.test(s)) {
+            //             const year = parseInt(s.slice(0, 4), 10);
+            //             const month = parseInt(s.slice(4, 6), 10) - 1;
+            //             const day = parseInt(s.slice(6, 8), 10);
+
+            //             // parse date para respetar la fecha de la tabla
+            //             const d = new Date(Date.UTC(year, month, day))
+            //             return isNaN(d.getTime()) ? null : d;
+            //         }
+
+            //         m = /^(\d{4})[-\/](\d{2})[-\/](\d{2})/.exec(s);
+            //         if (m) return new Date(parseInt(m[1], 10), parseInt(m[2], 10) - 1, parseInt(m[3], 10));
+
+            //         const d2 = new Date(s);
+            //         return isNaN(d2.getTime()) ? null : d2;
+            //     }
+
+            //     function parseTime(vMs) {
+            //         if (vMs == null || vMs === "") return "";
+            //         let ms = typeof vMs === "object" ? vMs.ms : vMs;
+
+            //         if (typeof ms === "string" && ms.startsWith("PT")) {
+            //             const regex = /PT(\d+)H(\d+)M(\d+)S/;
+            //             const match = regex.exec(ms);
+            //             if (match) {
+            //                 const [_, h, m, s] = match;
+            //                 return `${h.padStart(2, "0")}:${m.padStart(2, "0")}:${s.padStart(2, "0")}`;
+            //             }
+            //         }
+
+            //         if (isNaN(ms)) return vMs;
+
+            //         let totalSeconds = Math.floor(ms / 1000);
+            //         let hours = Math.floor(totalSeconds / 3600);
+            //         let minutes = Math.floor((totalSeconds % 3600) / 60);
+            //         let seconds = totalSeconds % 60;
+
+            //         return `${hours.toString().padStart(2, "0")}:${minutes.toString().padStart(2, "0")}:${seconds.toString().padStart(2, "0")}`;
+            //     }
+
+            //     function parseInputsData(index, inputKey) {
+            //         const oSmartTable = that.byId("smartTable");
+            //         const oInnerTable = oSmartTable.getTable();
+
+            //         const rows = oInnerTable.getItems();
+            //         const currentRow = rows[index];
+            //         const currentInputValue = currentRow.getCells().filter(cell => cell.getId().includes(inputKey))[0].getValue();
+
+            //         return currentInputValue;
+            //     }
+            // },
+
+
             onSmartTableExportPress: async function () {
+                const that = this;
+
                 try {
                     const oSmartTable = this.byId("smartTable");
-                    const oSmartFilterBar = this.byId("smartFilterBar");
                     const oInnerTable = oSmartTable.getTable();
-                    let oBinding = oInnerTable.getBinding("rows") || oInnerTable.getBinding("items");
-
+                    const oModel = oInnerTable.getModel();
+                    const oBinding = oInnerTable.getBinding("rows") || oInnerTable.getBinding("items");
 
                     if (!oBinding) {
                         sap.m.MessageToast.show("No hay datos disponibles para exportar.");
                         return;
                     }
 
-
-
                     sap.ui.core.BusyIndicator.show(0);
 
-                    // ========= Obtener modelo, path, filtros y sorters =========
-                    const oModel = oBinding.getModel();
-                    const sPath = oBinding.getPath();
-                    const aFilters = this._exportFilters || [];
-                    // ========= Traer TODOS los datos del backend, en páginas =========
-                    const aExportDataRaw = await fetchAllData(oModel, sPath, aFilters);
+                    // =====================================================
+                    // 1️⃣ FORZAR CARGA COMPLETA DEL BINDING
+                    // =====================================================
+                    await loadAllContexts(oBinding);
 
-                    // ========= Aplicar formatters =========
+                    // =====================================================
+                    // 2️⃣ OBTENER TODOS LOS CONTEXTS (YA CARGADOS)
+                    // =====================================================
+                    const iLength = oBinding.getLength();
+                    const aContexts = oBinding.getContexts(0, iLength).filter(Boolean);
+
+                    const aExportDataRaw = aContexts.map(ctx => ctx.getObject());
+
+                    // =====================================================
+                    // 3️⃣ APLICAR FORMATTERS / TRANSFORMACIONES
+                    // =====================================================
+                    // const aExportData = aExportDataRaw.map(oObj => ({
+                    //     ...oObj,
+                    //     NotificationCreationDate: parseToDate(oObj.NotificationCreationDate),
+                    //     NotificationCreationTime: parseTime(oObj.NotificationCreationTime),
+                    //     Time: parseTime(oObj.Time)
+                    // }));
+
+                    const sEntityPath = oBinding.getPath(); // ej: "/ScrapMovements"
                     const aExportData = aExportDataRaw.map(oObj => {
-                        return {
+
+                        // const { ProductionOrder, ProductionOperation, Material, ReserveNumber, SerialNumber, Component, Charg, WorkCenter, Plant, StorageLocation, NotificationNumber, ItemNumber } = oObj
+
+                        // 1️⃣ construir path lógico estable
+                        const sKeyPath = oModel.createKey(sEntityPath, { ...oObj });
+
+                        const sFullPath = `${sKeyPath}`;
+
+                        // 2️⃣ aplicar overrides si existen
+                        const oOverrides = this._mMassChanges[sFullPath] || {};
+
+                        const oMerged = {
                             ...oObj,
-                            NotificationCreationDate: parseToDate(oObj.NotificationCreationDate),
-                            NotificationCreationTime: parseTime(oObj.NotificationCreationTime),
-                            Time: parseTime(oObj.Time)
+                            ...oOverrides
+                        };
+
+                        // 3️⃣ aplicar formatters
+                        return {
+                            ...oMerged,
+                            NotificationCreationDate: parseToDate(oMerged.NotificationCreationDate),
+                            NotificationCreationTime: parseTime(oMerged.NotificationCreationTime),
+                            Time: parseTime(oMerged.Time)
                         };
                     });
 
-                    // ========= Columnas del Excel =========
+                    // =====================================================
+                    // 4️⃣ COLUMNAS SEGÚN TABLA
+                    // =====================================================
                     const aColumns = this.getColumnsFromTable(oInnerTable);
 
-                    // ========= Exportación =========
+                    // =====================================================
+                    // 5️⃣ EXPORT
+                    // =====================================================
                     const oExportSettings = {
                         workbook: { columns: aColumns },
                         dataSource: aExportData,
                         fileName: "Export_ScrapMovements.xlsx"
                     };
 
-                    const oSheet = new Spreadsheet(oExportSettings);
+                    const oSheet = new sap.ui.export.Spreadsheet(oExportSettings);
                     await oSheet.build();
                     oSheet.destroy();
 
@@ -2272,45 +2399,41 @@ sap.ui.define([
                     sap.ui.core.BusyIndicator.hide();
                 }
 
-                // ============================================================
-                // =============== Helpers Internos ============================
-                // ============================================================
+                // =====================================================
+                // =============== HELPERS ===============================
+                // =====================================================
 
-                async function fetchAllData(oModel, sEntitySet, aFilters) {
-                    const pageSize = 10000;
-                    let skip = 0;
-                    let allResults = [];
-                    let keepLoading = true;
+                async function loadAllContexts(oBinding) {
 
-                    while (keepLoading) {
-                        const oParams = {
-                            $skip: skip,
-                            $top: pageSize
+                    const iTotal = oBinding.getLength();
+                    const iPageSize = 1000;
+
+                    return new Promise(resolve => {
+
+                        let loaded = 0;
+
+                        const fnDataReceived = () => {
+                            loaded = oBinding.getContexts(0, iTotal).filter(Boolean).length;
+
+                            if (loaded >= iTotal) {
+                                oBinding.detachDataReceived(fnDataReceived);
+                                resolve();
+                            }
                         };
 
-                        const chunk = await new Promise((resolve, reject) => {
-                            oModel.read(sEntitySet, {
-                                filters: aFilters,
-                                urlParameters: oParams,
-                                success: oData => resolve(oData.results || []),
-                                error: reject
-                            });
-                        });
+                        oBinding.attachDataReceived(fnDataReceived);
 
-                        allResults = allResults.concat(chunk);
-
-                        if (chunk.length < pageSize) {
-                            keepLoading = false;      // Última página
-                        } else {
-                            skip += pageSize;         // Siguiente batch
+                        for (let i = 0; i < iTotal; i += iPageSize) {
+                            oBinding.getContexts(i, iPageSize);
                         }
-                    }
 
-                    return allResults;
+                        fnDataReceived();
+                    });
                 }
 
                 function parseToDate(raw) {
-                    if (raw == null || raw === "") return null;
+                    if (!raw) return null;
+
                     if (raw instanceof Date) return isNaN(raw.getTime()) ? null : raw;
 
                     const s = String(raw).trim();
@@ -2318,45 +2441,36 @@ sap.ui.define([
                     if (m) return new Date(parseInt(m[1], 10));
 
                     if (/^\d{8}$/.test(s)) {
-                        const year = parseInt(s.slice(0, 4), 10);
-                        const month = parseInt(s.slice(4, 6), 10) - 1;
-                        const day = parseInt(s.slice(6, 8), 10);
-
-                        // parse date para respetar la fecha de la tabla
-                        const d = new Date(Date.UTC(year, month, day))
-                        return isNaN(d.getTime()) ? null : d;
+                        const y = +s.slice(0, 4);
+                        const mth = +s.slice(4, 6) - 1;
+                        const d = +s.slice(6, 8);
+                        return new Date(Date.UTC(y, mth, d));
                     }
-
-                    m = /^(\d{4})[-\/](\d{2})[-\/](\d{2})/.exec(s);
-                    if (m) return new Date(parseInt(m[1], 10), parseInt(m[2], 10) - 1, parseInt(m[3], 10));
 
                     const d2 = new Date(s);
                     return isNaN(d2.getTime()) ? null : d2;
                 }
 
                 function parseTime(vMs) {
-                    if (vMs == null || vMs === "") return "";
+                    if (!vMs) return "";
+
                     let ms = typeof vMs === "object" ? vMs.ms : vMs;
 
                     if (typeof ms === "string" && ms.startsWith("PT")) {
-                        const regex = /PT(\d+)H(\d+)M(\d+)S/;
-                        const match = regex.exec(ms);
-                        if (match) {
-                            const [_, h, m, s] = match;
-                            return `${h.padStart(2, "0")}:${m.padStart(2, "0")}:${s.padStart(2, "0")}`;
-                        }
+                        const r = /PT(\d+)H(\d+)M(\d+)S/.exec(ms);
+                        if (r) return `${r[1].padStart(2, "0")}:${r[2].padStart(2, "0")}:${r[3].padStart(2, "0")}`;
                     }
 
                     if (isNaN(ms)) return vMs;
 
-                    let totalSeconds = Math.floor(ms / 1000);
-                    let hours = Math.floor(totalSeconds / 3600);
-                    let minutes = Math.floor((totalSeconds % 3600) / 60);
-                    let seconds = totalSeconds % 60;
-
-                    return `${hours.toString().padStart(2, "0")}:${minutes.toString().padStart(2, "0")}:${seconds.toString().padStart(2, "0")}`;
+                    const sec = Math.floor(ms / 1000);
+                    return [
+                        Math.floor(sec / 3600),
+                        Math.floor((sec % 3600) / 60),
+                        sec % 60
+                    ].map(v => String(v).padStart(2, "0")).join(":");
                 }
-            },
+            }
 
         });
     });

@@ -137,15 +137,15 @@ sap.ui.define([
                 "CostCenter": [
                     {
                         "label": "{i18n>costcenter}",
-                        "template": "CostCenter"
+                        "template": "costcenter"
                     },
                     {
-                        "label": "{i18n>controllingArea}",
-                        "template": "ControllingArea"
+                        "label": "{i18n>plant}",
+                        "template": "plant"
                     },
                     {
-                        "label": "{i18n>name}",
-                        "template": "Name"
+                        "label": "{i18n>workcenter}",
+                        "template": "workcenter"
                     },
                 ],
                 "Reason": [{

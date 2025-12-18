@@ -577,9 +577,8 @@
                             <cells>
                                 <Input
                                     id="scrapQty"
-                                    value="{BlockedQuantity}"
+                                    value="{ScrapQuantity}"
                                     type="Number"
-                                    editable="true"
                                     change="onFormatValue"
                                     maxLength="5"
                                 />
@@ -589,7 +588,6 @@
                                     id="freeQty"
                                     value="{FreeQuantity}"
                                     type="Number"
-                                    editable="true"
                                     change="onFormatValue"
                                     maxLength="5"
                                 />
@@ -598,12 +596,12 @@
                                 <Input
                                     id="Reason"
                                     type="Number"
-                                    editable="true"
                                     showValueHelp="true"
                                     valueHelpRequest="onValueHelpRequestInputsTable"
                                     valueStateText="{i18n>reasonRequired}"
-                                    change="onReasonChange"
+                                    change="onInputChange"
                                     maxLength="4"
+                                    value="{Reason}"
                                 />
 
                                 <!-- COMBOBOX OPTION -->
@@ -622,12 +620,11 @@
                             <cells>
                                 <Input
                                     id="CostCenter"
-                                    type="Text"
-                                    editable="true"
                                     showValueHelp="true"
                                     valueHelpRequest="onValueHelpRequestInputsTable"
                                     valueStateText="{i18n>costCenterRequired}"
-                                    change="onCostCenterChange"
+                                    change="onInputChange"
+                                    value="{CostCenter}"
                                 />
 
                                 <!-- COMBOBOX OPTION -->
