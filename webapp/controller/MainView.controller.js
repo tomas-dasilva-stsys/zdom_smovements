@@ -1389,11 +1389,16 @@ sap.ui.define([
             //     });
             // },
 
-            onValueHelpRequestInputsTable: function (oEvent) {
+            onValueHelpRequestInputsTable: async function (oEvent) {
                 let oInput = oEvent.getSource();
                 let currId = oInput.getId().split('-').filter(item => item === 'Reason' || item === 'CostCenter')[0]
 
                 inputId = currId ? currId : '';
+
+                let sPath;
+                if (inputId === 'CostCenter') {
+                    sPath = await this.checkCostCenterPath(oInput)
+                }
 
                 // Obtener tabla y fila
                 let oTable = this.byId("table");
@@ -1410,39 +1415,85 @@ sap.ui.define([
                 let currSpath = this.getMatchCodePath(inputId);
                 let oFilters = this.getCurrentFilter(inputId);
 
-                this.getFragment(`${inputId}HelpDialog`).then(oFragment => {
-                    oFragment.getTableAsync().then(function (oTable) {
-                        oTable.setModel(MatchcodesService.getOdataModel());
+                if (sPath === '/MatchCodePlant') {
+                    this.getFragment(`${inputId}HelpDialog`).then(oFragment => {
+                        oFragment.getTableAsync().then(function (oTable) {
+                            oTable.setModel(MatchcodesService.getOdataModel());
 
-                        let tableCols = AppJsonModel.getProperty(`/${inputId}`);
-                        let currentJsonModel = new JSONModel({ "cols": tableCols });
+                            let tableCols = AppJsonModel.getProperty(`/${inputId}`);
+                            let currentJsonModel = new JSONModel({ "cols": tableCols });
 
-                        oTable.setModel(currentJsonModel, "columns");
+                            oTable.setModel(currentJsonModel, "columns");
 
-                        if (oTable.bindRows) {
-                            oTable.bindAggregation("rows", {
-                                path: currSpath.path,
-                                filters: oFilters,
-                                showHeader: false
-                            });
-                        }
+                            if (oTable.bindRows) {
+                                oTable.bindAggregation("rows", {
+                                    path: inputId === 'CostCenter' ? sPath : currSpath.path,
+                                    filters: oFilters,
+                                    showHeader: false
+                                });
+                            }
 
-                        oFragment.update();
+                            oFragment.update();
+                        });
+
+                        oFragment.open();
+                        return;
                     });
+                } else {
+                    this.getFragment('CostCenterOldHelpDialog').then(oFragment => {
+                        oFragment.getTableAsync().then(function (oTable) {
+                            oTable.setModel(MatchcodesService.getOdataModel());
 
-                    oFragment.open();
-                });
+                            let tableCols = AppJsonModel.getProperty('/CostCenterOld');
+                            let currentJsonModel = new JSONModel({ "cols": tableCols });
+
+                            oTable.setModel(currentJsonModel, "columns");
+
+                            if (oTable.bindRows) {
+                                oTable.bindAggregation("rows", {
+                                    path: sPath,
+                                    filters: oFilters,
+                                    showHeader: false
+                                });
+                            }
+
+                            oFragment.update();
+                        });
+
+                        oFragment.open();
+                        return;
+                    });
+                }
+
 
             },
 
+            checkCostCenterPath: async function (oInput) {
+                const currWorkcenter = oInput.getBindingContext().getObject().WorkCenter;
+                const aFilter = new Filter('workcenter', FilterOperator.EQ, currWorkcenter);
+
+                const sPath = MatchcodesService.callGetService('/MatchCodePlant', [aFilter]).then(data => {
+                    if (data.results.length > 0) {
+                        return '/MatchCodePlant'
+                    }
+
+                    return '/MatchCodeCostCenter';
+                });
+
+                return sPath;
+            },
             onValueHelpOkPress: function (oEvent) {
                 const oTable = this.byId('table');
                 const regex = /--([a-zA-Z]+)--([a-zA-Z]+)/;
                 let currValue;
 
-                inputId === 'CostCenter'
-                    ? currValue = oEvent.getParameter("tokens")[0].getCustomData()[0].getValue().costcenter
-                    : currValue = oEvent.getParameter("tokens")[0].getKey();
+                if (inputId === 'CostCenter') {
+                    if (!oEvent.getParameter("tokens")[0].getCustomData()[0].getValue().costcenter) {
+                        currValue = oEvent.getParameter("tokens")[0].getCustomData()[0].getValue().CostCenter
+                    } else {
+                        currValue = currValue = oEvent.getParameter("tokens")[0].getCustomData()[0].getValue().costcenter;
+                    }
+                }
 
                 let rowSelected = oTable.getItems()[currRowPosition];
                 let tokensSelected = oEvent.getParameter('tokens').map(token => ({ key: token.getKey(), text: token.getText() }));
@@ -1540,6 +1591,29 @@ sap.ui.define([
                 })
             },
 
+            onFilterBarSearchOldCostCenter: function (oEvent) {
+                let aSelectionSet = oEvent.getParameter("selectionSet");
+                let aFilters = this.setProdOrderFilters(aSelectionSet);
+
+                this.getFragment('CostCenterOldHelpDialog').then(oFragment => {
+                    let oBindingInfo = oFragment.getTable().getBinding("rows");
+
+                    if (aFilters.length) {
+                        let oFilters = new Filter({
+                            filters: aFilters,
+                            and: true // false
+                        });
+
+                        oBindingInfo.filter(oFilters);
+                        oFragment.update();
+                        return;
+                    }
+
+                    oBindingInfo.filter([]);
+                    oFragment.update();
+                })
+            },
+
             onFilterBarSearchMassFill: function (oEvent) {
                 let aSelectionSet = oEvent.getParameter("selectionSet");
                 let aFilters = this.setProdOrderFilters(aSelectionSet);
@@ -1607,6 +1681,40 @@ sap.ui.define([
                 }
 
                 this.getFragment(`${inputId}HelpDialog`).then(oFragment => {
+                    let oBindingInfo = oFragment.getTable().getBinding("rows");
+
+                    if (aFilters.length) {
+                        let oFilters = new Filter({
+                            filters: aFilters,
+                            and: true // false
+                        });
+
+                        oBindingInfo.filter(oFilters);
+                        oFragment.update();
+                        return;
+                    }
+
+                    oBindingInfo.filter([]);
+                    oFragment.update();
+                })
+            },
+
+            onSubmitFilterOldCostCenter: function (oEvent) {
+                let currName = oEvent.getSource().getName();
+                let currValue = oEvent.getParameter("value");
+                let aFilters = [];
+
+                if (!currValue.startsWith('*') && !currValue.endsWith('*')) {
+                    aFilters.push(new Filter(currName, FilterOperator.Contains, currValue));
+                } else if (currValue.startsWith('*') && currValue.endsWith('*')) {
+                    aFilters.push(new Filter(currName, FilterOperator.Contains, currValue.slice(1, -1)));
+                } else if (currValue.startsWith('*')) {
+                    aFilters.push(new Filter(currName, FilterOperator.EndsWith, currValue.slice(1)));
+                } else if (currValue.endsWith('*')) {
+                    aFilters.push(new Filter(currName, FilterOperator.StartsWith, currValue.slice(0, -1)));
+                }
+
+                this.getFragment('CostCenterOldHelpDialog').then(oFragment => {
                     let oBindingInfo = oFragment.getTable().getBinding("rows");
 
                     if (aFilters.length) {

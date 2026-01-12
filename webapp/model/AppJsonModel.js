@@ -148,6 +148,20 @@ sap.ui.define([
                         "template": "workcenter"
                     },
                 ],
+                "CostCenterOld": [
+                    {
+                        "label": "{i18n>costcenter}",
+                        "template": "CostCenter"
+                    },
+                    {
+                        "label": "{i18n>controllingArea}",
+                        "template": "ControllingArea"
+                    },
+                    {
+                        "label": "{i18n>name}",
+                        "template": "Name"
+                    },
+                ],
                 "Reason": [{
                     "label": "{i18n>reason}",
                     "template": "Reason"
