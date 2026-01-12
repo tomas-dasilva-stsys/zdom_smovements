@@ -1,13 +1,12 @@
 <core:FragmentDefinition
     xmlns:m="sap.m"
     xmlns:core="sap.ui.core"
-    xmlns:table="sap.ui.table"
     xmlns="sap.ui.comp.valuehelpdialog"
     xmlns:fb="sap.ui.comp.filterbar"
 >
     <ValueHelpDialog
         title="{i18n>workcenterSelection}"
-        ok=".onValueHelpOkPress"
+        ok=".onValueHelpOkPressSmartTableFilters"
         cancel=".onExitDialog"
         key="WorkCenter"
         descriptionKey="Name"

@@ -1415,7 +1415,7 @@ sap.ui.define([
                 let currSpath = this.getMatchCodePath(inputId);
                 let oFilters = this.getCurrentFilter(inputId);
 
-                if (sPath === '/MatchCodePlant') {
+                if (sPath.path === '/MatchCodePlant') {
                     this.getFragment(`${inputId}HelpDialog`).then(oFragment => {
                         oFragment.getTableAsync().then(function (oTable) {
                             oTable.setModel(MatchcodesService.getOdataModel());
@@ -1427,8 +1427,8 @@ sap.ui.define([
 
                             if (oTable.bindRows) {
                                 oTable.bindAggregation("rows", {
-                                    path: inputId === 'CostCenter' ? sPath : currSpath.path,
-                                    filters: oFilters,
+                                    path: inputId === 'CostCenter' ? sPath.path : currSpath.path,
+                                    filters: sPath.filters,
                                     showHeader: false
                                 });
                             }
@@ -1464,17 +1464,16 @@ sap.ui.define([
                         return;
                     });
                 }
-
-
             },
 
             checkCostCenterPath: async function (oInput) {
                 const currWorkcenter = oInput.getBindingContext().getObject().WorkCenter;
-                const aFilter = new Filter('workcenter', FilterOperator.EQ, currWorkcenter);
+                const currentPlant = oInput.getBindingContext().getObject().Plant;
+                const aFilter = [new Filter('workcenter', FilterOperator.EQ, currWorkcenter), new Filter('plant', FilterOperator.EQ, currentPlant)];
 
-                const sPath = MatchcodesService.callGetService('/MatchCodePlant', [aFilter]).then(data => {
+                const sPath = MatchcodesService.callGetService('/MatchCodePlant', aFilter).then(data => {
                     if (data.results.length > 0) {
-                        return '/MatchCodePlant'
+                        return { path: '/MatchCodePlant', filters: aFilter };
                     }
 
                     return '/MatchCodeCostCenter';
@@ -1522,6 +1521,15 @@ sap.ui.define([
                 }
 
                 this.onExitDialog();
+            },
+
+            onValueHelpOkPressSmartTableFilters: function (oEvent) {
+                let currId = inputId;
+
+                let tokensSelected = oEvent.getParameter('tokens').map(token => ({ key: token.getKey(), text: token.getText() }));
+                AppJsonModel.setInnerProperty('/FilterValues', currId, tokensSelected);
+                this.onExitDialog();
+                return;
             },
 
             // SAP.UI.TABLE VARIANT
