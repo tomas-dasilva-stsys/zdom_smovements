@@ -11,7 +11,7 @@
         afterClose="onDialogAfterClose"
         contentWidth="32%"
     >
-        <Label
+        <!-- <Label
             text="{i18n>serialNumbers}"
             visible="{AppJsonModel>/Visible/ReferenceNumberVisible}"
         />
@@ -22,7 +22,7 @@
             wrap="Wrap"
             class="sapUiSmallMarginBottom"
             visible="{AppJsonModel>/Visible/ReferenceNumberVisible}"
-        />
+        /> -->
 
         <Label
             id="idMovementReason"

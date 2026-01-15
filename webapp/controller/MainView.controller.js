@@ -1173,37 +1173,134 @@ sap.ui.define([
                 AppJsonModel.setInnerProperty('/Visible', 'ReferenceNumberVisible', false);
             },
 
-            onValueHelpMassFillRequest: function (oEvent) {
+            onValueHelpMassFillRequest: async function (oEvent) {
                 let currId = oEvent.getSource().getId();
                 let match = currId.split('-').pop();
                 inputId = match;
-                currRowPosition = oEvent.getSource().getId().split('-').pop();
 
-                let currSpath = this.getMatchCodePath(inputId);
-                let oFilters = this.getCurrentFilter(inputId);
-                this.getFragment(`MassFill${inputId}HelpDialog`).then(oFragment => {
-                    oFragment.getTableAsync().then(function (oTable) {
-                        oTable.setModel(MatchcodesService.getOdataModel());
-                        let tableCols = AppJsonModel.getProperty(`/${inputId}`);
-                        let currentJsonModel = new JSONModel({
-                            "cols": tableCols
-                        })
+                if (inputId === 'CostCenter') {
+                    let oTable = this.byId('table');
+                    let selectedItems = oTable.getSelectedItems();
+                    let uniqueWorkcenters = new Set(selectedItems.map(item => item.getBindingContext().getObject().WorkCenter));
+                    let uniquePlants = new Set(selectedItems.map(item => item.getBindingContext().getObject().Plant));
 
-                        oTable.setModel(currentJsonModel, "columns");
+                    let workcentersArray = Array.from(uniqueWorkcenters);
+                    let plantArray = Array.from(uniquePlants);
 
-                        if (oTable.bindRows) {
-                            oTable.bindAggregation("rows", {
-                                path: currSpath.path,
-                                filters: oFilters,
-                                showHeader: false
-                            });
+                    let aFilters = workcentersArray.map(wc => new Filter("workcenter", FilterOperator.EQ, wc));
+                    let wcFilters = new Filter({
+                        filters: aFilters,
+                        and: false
+                    })
+
+                    let pFilters = plantArray.map(pl => new Filter("plant", FilterOperator.EQ, pl));
+                    let plantFilters = new Filter({
+                        filters: pFilters,
+                        and: false
+                    })
+
+                    let oCombinedFilter = new Filter({
+                        filters: [wcFilters, plantFilters],
+                        and: true
+                    })
+
+                    const matchcodeResult = await MatchcodesService.callGetService('/MatchCodePlant', [oCombinedFilter]).then(data => {
+                        if (data.results.length > 0) {
+                            const resultWc = data.results.map(item => item.workcenter);
+                            const allWcExist = workcentersArray.every(wc => resultWc.includes(wc));
+
+                            if (allWcExist) {
+                                return { path: '/MatchCodePlant', filters: [oCombinedFilter], cols: 'CostCenter' }
+                            } else {
+                                return { path: '/MatchCodeCostCenter', filters: [], cols: 'CostCenterOld' };
+                            }
                         }
 
-                        oFragment.update();
+                        return { path: '/MatchCodeCostCenter', filters: [], cols: 'CostCenterOld' };
+                    })
 
-                    });
-                    oFragment.open();
-                })
+                    this.getFragment(`MassFillCostCenterHelpDialog`).then(oFragment => {
+                        oFragment.getTableAsync().then(function (oTable) {
+                            oTable.setModel(MatchcodesService.getOdataModel());
+                            let tableCols = AppJsonModel.getProperty(`/${matchcodeResult.cols}`);
+                            let currentJsonModel = new JSONModel({
+                                "cols": tableCols
+                            })
+
+                            oTable.setModel(currentJsonModel, "columns");
+
+                            if (oTable.bindRows) {
+                                oTable.bindAggregation("rows", {
+                                    path: matchcodeResult.path,
+                                    filters: matchcodeResult.filters,
+                                    showHeader: false
+                                });
+                            }
+
+                            oFragment.update();
+
+                        });
+                        oFragment.open();
+                    })
+                }
+
+                if (inputId === 'Reason') {
+                    let oFilters = this.getCurrentFilter(inputId);
+                    let currSpath = this.getMatchCodePath(inputId);
+                    this.getFragment(`MassFill${inputId}HelpDialog`).then(oFragment => {
+                        oFragment.getTableAsync().then(function (oTable) {
+                            oTable.setModel(MatchcodesService.getOdataModel());
+                            let tableCols = AppJsonModel.getProperty(`/${inputId}`);
+                            let currentJsonModel = new JSONModel({
+                                "cols": tableCols
+                            })
+
+                            oTable.setModel(currentJsonModel, "columns");
+
+                            if (oTable.bindRows) {
+                                oTable.bindAggregation("rows", {
+                                    path: currSpath.path,
+                                    filters: oFilters,
+                                    showHeader: false
+                                });
+                            }
+
+                            oFragment.update();
+
+                        });
+                        oFragment.open();
+                    })
+                }
+
+
+
+                // currRowPosition = oEvent.getSource().getId().split('-').pop();
+
+
+
+                // this.getFragment(`MassFill${inputId}HelpDialog`).then(oFragment => {
+                //     oFragment.getTableAsync().then(function (oTable) {
+                //         oTable.setModel(MatchcodesService.getOdataModel());
+                //         let tableCols = AppJsonModel.getProperty(`/${inputId}`);
+                //         let currentJsonModel = new JSONModel({
+                //             "cols": tableCols
+                //         })
+
+                //         oTable.setModel(currentJsonModel, "columns");
+
+                //         if (oTable.bindRows) {
+                //             oTable.bindAggregation("rows", {
+                //                 path: currSpath.path,
+                //                 filters: oFilters,
+                //                 showHeader: false
+                //             });
+                //         }
+
+                //         oFragment.update();
+
+                //     });
+                //     oFragment.open();
+                // })
             },
 
             onValueHelpOkPressMassFill: function (oEvent) {
@@ -1212,12 +1309,16 @@ sap.ui.define([
 
                 let currValue;
 
-                inputId === 'CostCenter'
-                    ? currValue = oEvent.getParameter("tokens")[0].getCustomData()[0].getValue().costcenter
-                    : currValue = oEvent.getParameter("tokens")[0].getKey()
-
+                if (inputId === 'CostCenter') {
+                    if (!oEvent.getParameter("tokens")[0].getCustomData()[0].getValue().costcenter) {
+                        currValue = oEvent.getParameter("tokens")[0].getCustomData()[0].getValue().CostCenter
+                    } else {
+                        currValue = currValue = oEvent.getParameter("tokens")[0].getCustomData()[0].getValue().costcenter;
+                    }
+                }
 
                 if (inputId === 'Reason') {
+                    currValue = oEvent.getParameter("tokens")[0].getKey()
                     reasonInput.setValue(currValue);
                     reasonInput.setValueState('None');
                     this.onExitMassFillDialog();
@@ -1395,11 +1496,6 @@ sap.ui.define([
 
                 inputId = currId ? currId : '';
 
-                let sPath;
-                if (inputId === 'CostCenter') {
-                    sPath = await this.checkCostCenterPath(oInput)
-                }
-
                 // Obtener tabla y fila
                 let oTable = this.byId("table");
                 let oRow = oInput.getParent(); // parent del input es una celda, y su parent es la fila
@@ -1412,10 +1508,64 @@ sap.ui.define([
                     return;
                 }
 
-                let currSpath = this.getMatchCodePath(inputId);
-                let oFilters = this.getCurrentFilter(inputId);
+                if (inputId === 'CostCenter') {
+                    let sPath = await this.checkCostCenterPath(oInput)
 
-                if (sPath.path === '/MatchCodePlant') {
+                    if (sPath.path === '/MatchCodePlant') {
+                        this.getFragment(`${inputId}HelpDialog`).then(oFragment => {
+                            oFragment.getTableAsync().then(function (oTable) {
+                                oTable.setModel(MatchcodesService.getOdataModel());
+
+                                let tableCols = AppJsonModel.getProperty(`/${inputId}`);
+                                let currentJsonModel = new JSONModel({ "cols": tableCols });
+
+                                oTable.setModel(currentJsonModel, "columns");
+
+                                if (oTable.bindRows) {
+                                    oTable.bindAggregation("rows", {
+                                        path: inputId === 'CostCenter' ? sPath.path : currSpath.path,
+                                        filters: sPath.filters,
+                                        showHeader: false
+                                    });
+                                }
+
+                                oFragment.update();
+                            });
+
+                            oFragment.open();
+                            return;
+                        });
+                    } else {
+                        this.getFragment('CostCenterOldHelpDialog').then(oFragment => {
+                            oFragment.getTableAsync().then(function (oTable) {
+                                oTable.setModel(MatchcodesService.getOdataModel());
+
+                                let tableCols = AppJsonModel.getProperty('/CostCenterOld');
+                                let currentJsonModel = new JSONModel({ "cols": tableCols });
+
+                                oTable.setModel(currentJsonModel, "columns");
+
+                                if (oTable.bindRows) {
+                                    oTable.bindAggregation("rows", {
+                                        path: sPath.path,
+                                        filters: sPath.filters,
+                                        showHeader: false
+                                    });
+                                }
+
+                                oFragment.update();
+                            });
+
+                            oFragment.open();
+                            return;
+                        });
+                    }
+                }
+
+                if (inputId === 'Reason') {
+                    let currSpath = this.getMatchCodePath(inputId);
+                    let oFilters = this.getCurrentFilter(inputId);
+
                     this.getFragment(`${inputId}HelpDialog`).then(oFragment => {
                         oFragment.getTableAsync().then(function (oTable) {
                             oTable.setModel(MatchcodesService.getOdataModel());
@@ -1427,31 +1577,7 @@ sap.ui.define([
 
                             if (oTable.bindRows) {
                                 oTable.bindAggregation("rows", {
-                                    path: inputId === 'CostCenter' ? sPath.path : currSpath.path,
-                                    filters: sPath.filters,
-                                    showHeader: false
-                                });
-                            }
-
-                            oFragment.update();
-                        });
-
-                        oFragment.open();
-                        return;
-                    });
-                } else {
-                    this.getFragment('CostCenterOldHelpDialog').then(oFragment => {
-                        oFragment.getTableAsync().then(function (oTable) {
-                            oTable.setModel(MatchcodesService.getOdataModel());
-
-                            let tableCols = AppJsonModel.getProperty('/CostCenterOld');
-                            let currentJsonModel = new JSONModel({ "cols": tableCols });
-
-                            oTable.setModel(currentJsonModel, "columns");
-
-                            if (oTable.bindRows) {
-                                oTable.bindAggregation("rows", {
-                                    path: sPath,
+                                    path: currSpath.path,
                                     filters: oFilters,
                                     showHeader: false
                                 });
@@ -1476,7 +1602,7 @@ sap.ui.define([
                         return { path: '/MatchCodePlant', filters: aFilter };
                     }
 
-                    return '/MatchCodeCostCenter';
+                    return { path: '/MatchCodeCostCenter', filters: [] };
                 });
 
                 return sPath;
@@ -1487,15 +1613,33 @@ sap.ui.define([
                 let currValue;
 
                 if (inputId === 'CostCenter') {
+                    let rowSelected = oTable.getItems()[currRowPosition];
+                    let oCtx = rowSelected.getBindingContext();
+                    const oModel = oCtx.getModel();
+                    const sRowPath = oCtx.getPath();
+
                     if (!oEvent.getParameter("tokens")[0].getCustomData()[0].getValue().costcenter) {
                         currValue = oEvent.getParameter("tokens")[0].getCustomData()[0].getValue().CostCenter
                     } else {
                         currValue = currValue = oEvent.getParameter("tokens")[0].getCustomData()[0].getValue().costcenter;
                     }
+
+                    oModel.setProperty(`${sRowPath}/${inputId}`, currValue);
+                    const oInput = rowSelected.getCells().find(c => c.getId().includes(inputId));
+
+                    if (oInput) {
+                        oInput.setValueState("None");
+                    }
+
+                    this.onExitDialog();
+                    return;
                 }
 
                 let rowSelected = oTable.getItems()[currRowPosition];
                 let tokensSelected = oEvent.getParameter('tokens').map(token => ({ key: token.getKey(), text: token.getText() }));
+                if (tokensSelected) {
+                    currValue = tokensSelected[0].key;
+                }
                 let oCtx = rowSelected.getBindingContext();
 
                 if (!oCtx) {
