@@ -128,25 +128,11 @@ sap.ui.define([
 
                 const currValue = oInput.getValue();
 
-                if (!currValue.trim()) {
+                if (currValue.trim() === '' || currValue.trim()) {
                     this.byId(`MassFill-${inputId}`).setValueState('None');
                     this.byId(`MassFill-${inputId}`).setValueStateText('');
-                    confirmBtn.setEnabled(true);
                     return;
                 }
-
-                const valueExists = await this.checkValueExists(inputId, currValue);
-
-                if (!valueExists) {
-                    this.byId(`MassFill-${inputId}`).setValueState('Error');
-                    this.byId(`MassFill-${inputId}`).setValueStateText(oResourceBundle.getText('invalidValueMsg', [currValue]));
-                    confirmBtn.setEnabled(false);
-                    return;
-                }
-
-                this.byId(`MassFill-${inputId}`).setValueState('None');
-                this.byId(`MassFill-${inputId}`).setValueStateText('');
-                confirmBtn.setEnabled(true);
             },
 
             checkValueExists: async function (sInputId, sValue) {
@@ -1473,24 +1459,50 @@ sap.ui.define([
                 }
             },
 
-            onConfirmMassFillAction: function (oEvent) {
-                // const that = this;
-                // const oResourceBundle = this.getView().getModel("i18n").getResourceBundle();
-
-                // selecteditems.forEach(item => {
-                //     item.getCells().filter(cell => cell.getId().match(regex)).filter(item => item.sId.includes('Reason'))[0].setValue(reasonInput.getValue().trim());
-
-                //     item.getCells().filter(cell => cell.getId().match(regex)).filter(item => item.sId.includes('CostCenter'))[0].setValue(costCenterInput.getValue().trim());
-                // })
-
-                // that.destroyFragments();
-                // const regex = /--([a-zA-Z]+)--([a-zA-Z]+)/;
-
+            onConfirmMassFillAction: async function (oEvent) {
                 const oTable = this.byId('table');
                 const oModel = oTable.getModel();
+                const oResourceBundle = this.getView().getModel("i18n").getResourceBundle();
                 const sReason = this.byId('MassFill-Reason').getValue().trim();
                 const sCostCenter = this.byId('MassFill-CostCenter').getValue().trim();
                 const aItems = oTable.getSelectedItems();
+
+                if (sReason) {
+                    const reasonExists = await this.checkValueExists('Reason', sReason);
+
+                    if (!reasonExists) {
+                        this.byId('MassFill-Reason').setValueState("Error");
+                        this.byId('MassFill-Reason').setValueStateText(oResourceBundle.getText("invalidValueMsg", [sReason]));
+                        this.byId('MassFill-CostCenter').setValueState("None");
+                        this.byId('MassFill-CostCenter').setValueStateText('');
+                    }
+                }
+
+                if (sCostCenter) {
+                    const costCenterExists = await this.checkValueExists('CostCenter', sCostCenter);
+
+                    if (!costCenterExists) {
+                        this.byId('MassFill-CostCenter').setValueState("Error");
+                        this.byId('MassFill-CostCenter').setValueStateText(oResourceBundle.getText("invalidValueMsg", [sCostCenter]));
+                        this.byId('MassFill-Reason').setValueState("None");
+                        this.byId('MassFill-Reason').setValueStateText('');
+                    }
+                }
+
+                if (this.byId('MassFill-Reason').getValueState() === "Error" || this.byId('MassFill-CostCenter').getValueState() === "Error") return;
+
+                // if (!reasonExists && !costCenterExists) {
+                //     this.byId('MassFill-Reason').setValueState("Error");
+                //     this.byId('MassFill-Reason').setValueStateText(oResourceBundle.getText("invalidValueMsg", [sReason]));
+                //     this.byId('MassFill-CostCenter').setValueState("Error");
+                //     this.byId('MassFill-CostCenter').setValueStateText(oResourceBundle.getText("invalidValueMsg", [sCostCenter]));
+                //     return;
+                // }
+
+                this.byId('MassFill-CostCenter').setValueState("None");
+                this.byId('MassFill-CostCenter').setValueStateText('');
+                this.byId('MassFill-Reason').setValueState("None");
+                this.byId('MassFill-Reason').setValueStateText('');
 
                 aItems.forEach(item => {
                     const oCtx = item.getBindingContext();
@@ -1658,6 +1670,8 @@ sap.ui.define([
 
                     if (singleCostCenter) {
                         oInput.setValue(singleCostCenter);
+                        oInput.setValueState('None');
+                        oInput.setValueStateText('');
                         return;
                     }
 
