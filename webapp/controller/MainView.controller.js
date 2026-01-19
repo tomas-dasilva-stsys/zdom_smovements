@@ -84,9 +84,10 @@ sap.ui.define([
                 this.getView().setModel(this._localChangesModel, "localChanges");
             },
 
-            onInputChange: function (oEvent) {
+            onInputChange: async function (oEvent) {
                 const oInput = oEvent.getSource();
                 const oCtx = oInput.getBindingContext();
+                const oResourceBundle = this.getView().getModel("i18n").getResourceBundle();
 
                 if (!oCtx) return;
 
@@ -100,9 +101,39 @@ sap.ui.define([
                         oInput.getId().includes('Reason') ? 'Reason' :
                             null;
 
-                if (!sProp) return;
+                if (!sProp || !oInput.getValue().trim()) {
+                  oInput.setValueState('None');
+                  oInput.setValueStateText('');
+                  return;
+                } 
 
+                const valueExists = await this.checkValueExists(sProp, oInput.getValue());
+
+                if (!valueExists) {
+                    oInput.setValueState('Error');
+                    oInput.setValueStateText(oResourceBundle.getText('invalidValueMsg', [oInput.getValue()]));
+                    return;
+                }
+
+                oInput.setValueState('None');
+                oInput.setValueStateText('');
                 oModel.setProperty(sPath + "/" + sProp, oInput.getValue());
+            },
+
+            checkValueExists: async function (sInputId, sValue) {
+                const matchCodePath = `/MatchCode${sInputId}`;
+                const oFilter = new Filter(sInputId, FilterOperator.EQ, sValue);
+
+                try {
+                    const oData = await MatchcodesService.callGetService(matchCodePath, [oFilter]);
+                    if (oData.results.length === 0) {
+                        return false
+                    }
+
+                    return true
+                }catch (error) {
+                    return false
+                }
             },
 
             onSmartFilterBarAfterVariantSave: function (oEvent) {
