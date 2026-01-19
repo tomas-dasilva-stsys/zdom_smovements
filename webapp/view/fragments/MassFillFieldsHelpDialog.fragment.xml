@@ -35,7 +35,8 @@
             valueStateText="{i18n>reasonRequired}"
             showValueHelp="true"
             required="true"
-            liveChange="onInputMassFillLiveChange"
+            type="Number"
+            change="onInputMassFillChange"
         />
         <Label
             id="idCostCenter"
@@ -49,7 +50,7 @@
             valueStateText="{i18n>costCenterRequired}"
             showValueHelp="true"
             required="true"
-            liveChange="onInputMassFillLiveChange"
+            change="onInputMassFillChange"
             class="sapUiSmallMarginBottom"
         />
         <VBox

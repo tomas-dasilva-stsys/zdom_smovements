@@ -102,10 +102,10 @@ sap.ui.define([
                             null;
 
                 if (!sProp || !oInput.getValue().trim()) {
-                  oInput.setValueState('None');
-                  oInput.setValueStateText('');
-                  return;
-                } 
+                    oInput.setValueState('None');
+                    oInput.setValueStateText('');
+                    return;
+                }
 
                 const valueExists = await this.checkValueExists(sProp, oInput.getValue());
 
@@ -120,6 +120,35 @@ sap.ui.define([
                 oModel.setProperty(sPath + "/" + sProp, oInput.getValue());
             },
 
+            onInputMassFillChange: async function (oEvent) {
+                const oInput = oEvent.getSource();
+                const inputId = oInput.getId().split('-').pop();
+                const oResourceBundle = this.getView().getModel("i18n").getResourceBundle();
+                const confirmBtn = this.byId('dialogStockTransferBtn');
+
+                const currValue = oInput.getValue();
+
+                if (!currValue.trim()) {
+                    this.byId(`MassFill-${inputId}`).setValueState('None');
+                    this.byId(`MassFill-${inputId}`).setValueStateText('');
+                    confirmBtn.setEnabled(true);
+                    return;
+                }
+
+                const valueExists = await this.checkValueExists(inputId, currValue);
+
+                if (!valueExists) {
+                    this.byId(`MassFill-${inputId}`).setValueState('Error');
+                    this.byId(`MassFill-${inputId}`).setValueStateText(oResourceBundle.getText('invalidValueMsg', [currValue]));
+                    confirmBtn.setEnabled(false);
+                    return;
+                }
+
+                this.byId(`MassFill-${inputId}`).setValueState('None');
+                this.byId(`MassFill-${inputId}`).setValueStateText('');
+                confirmBtn.setEnabled(true);
+            },
+
             checkValueExists: async function (sInputId, sValue) {
                 const matchCodePath = `/MatchCode${sInputId}`;
                 const oFilter = new Filter(sInputId, FilterOperator.EQ, sValue);
@@ -131,7 +160,7 @@ sap.ui.define([
                     }
 
                     return true
-                }catch (error) {
+                } catch (error) {
                     return false
                 }
             },
@@ -472,7 +501,6 @@ sap.ui.define([
                 // setting regEx
                 let regEx = /--([a-zA-Z]+)--([a-zA-Z]+)/;
 
-
                 // reset filters
                 if (oBinding) {
                     const oModel = oBinding.getModel();
@@ -490,6 +518,26 @@ sap.ui.define([
 
                 // getting filters controls
                 let mBindingParams = oEvent.getParameter("bindingParams");
+
+                // Remover listener anterior si existe
+                if (this._dataReceivedHandler) {
+                    mBindingParams.events = {};
+                }
+
+                // Agregar nuevo listener
+                // mBindingParams.events = {
+                //     dataReceived: function (oDataEvent) {
+                //         let oData = oDataEvent.getParameter("data");
+
+                //         // Verificar que existan resultados
+                //         if (oData && oData.results && oData.results.length > 0) {
+                //             // Esperar a que la tabla termine de renderizar
+                //             oTable.attachEventOnce("updateFinished", function () {
+                //                 this.checkTableData(oData.results);
+                //             }.bind(this));
+                //         }
+                //     }.bind(this)
+                // };
 
                 let oSmtFilter = this.getView().byId("smartFilterBar");
                 let dateFrom = oSmtFilter.getControlByKey("DateFrom");
@@ -619,22 +667,6 @@ sap.ui.define([
                     }
                 }
 
-                // if (notCreationTimeFrom || notCreationTimeTo) {
-                //     // let [hours, minutes, seconds] = notificationCreationTimeValue.split(":");
-                //     const [fromHours, fromMin, fromSec] = notCreationTimeFrom.split(':');
-                //     const [toHours, toMin, toSec] = notCreationTimeTo.split(':');
-
-                //     // convert to format OData Edm.Time: PTxxHxxMxxS
-                //     // let edmTimeValue = `PT${hours}H${minutes}M${seconds}S`;
-
-                //     const edmTimeFromValue = `PT${fromHours}H${fromMin}M${fromSec}S`;
-                //     const edmTimeToValue = `PT${toHours}H${toMin}M${toSec}S`;
-
-                //     let notificationCreationTimeFilter = new Filter("NotificationCreationTime", FilterOperator.BT, edmTimeFromValue, edmTimeToValue);
-
-                //     mBindingParams.filters.push(notificationCreationTimeFilter);
-                // }
-
                 if (stockTransfer) {
                     tableItems.forEach(row => {
                         let rowCells = row.getCells();
@@ -660,6 +692,83 @@ sap.ui.define([
 
                 oTable.removeSelections(true);
             },
+
+            // checkTableData: function (aData) {
+            //     const oTable = this.byId("smartTable").getTable();
+            //     const CONCURRENT_REQUESTS = 50;
+
+            //     const filterData = aData.map((item, index) => ({
+            //         index,
+            //         workcenter: item.WorkCenter,
+            //         plant: item.Plant
+            //     }));
+
+            //     let autoFilledCount = 0;
+            //     let processedCount = 0;
+            //     const totalCount = filterData.length;
+
+            //     // MessageToast.show(`Iniciando auto-completado de ${totalCount} registros...`);
+
+            //     // Dividir en chunks más pequeños para actualizar UI frecuentemente
+
+            //     // const processItem = async (item) => {
+            //     //     try {
+            //     //         let aFilter = [
+            //     //             new Filter("workcenter", FilterOperator.EQ, item.workcenter),
+            //     //             new Filter("plant", FilterOperator.EQ, item.plant)
+            //     //         ];
+
+            //     //         const response = await MatchcodesService.callGetService('/MatchCodePlant', aFilter);
+
+            //     //         if (response.results && response.results.length === 1) {
+            //     //             const costCenter = response.results[0].costcenter;
+
+            //     //             // Usar setTimeout para no bloquear el thread principal
+            //     //             setTimeout(() => {
+            //     //                 const oItem = oTable.getItems()[item.index];
+
+            //     //                 if (oItem) {
+            //     //                     const oCostCenterInput = oItem.getCells()[4];
+            //     //                     const oContext = oItem.getBindingContext();
+
+            //     //                     if (oContext && oCostCenterInput) {
+            //     //                         oContext.getModel().setProperty(
+            //     //                             oContext.getPath() + "/CostCenter",
+            //     //                             costCenter
+            //     //                         );
+
+            //     //                         oCostCenterInput.setEditable(false);
+            //     //                         oCostCenterInput.setShowValueHelp(false);
+            //     //                         autoFilledCount++;
+            //     //                     }
+            //     //                 }
+            //     //             }, 0);
+            //     //         }
+            //     //     } catch (error) {
+            //     //         console.error(`Error en item ${item.index}:`, error);
+            //     //     } finally {
+            //     //         processedCount++;
+            //     //     }
+            //     // };
+
+            //     // Procesar sin bloquear
+            //     // (async () => {
+            //     //     const startTime = Date.now();
+
+            //     //     for (let i = 0; i < filterData.length; i += CONCURRENT_REQUESTS) {
+            //     //         const chunk = filterData.slice(i, i + CONCURRENT_REQUESTS);
+            //     //         await Promise.all(chunk.map(processItem));
+
+            //     //         // Log cada 200 procesados
+            //     //         if (processedCount % 200 === 0) {
+            //     //             const elapsed = ((Date.now() - startTime) / 1000).toFixed(1);
+            //     //             console.log(`⏱ ${processedCount}/${totalCount} (${elapsed}s) - ${autoFilledCount} completados`);
+            //     //         }
+            //     //     }
+
+            //     //     const totalTime = ((Date.now() - startTime) / 1000).toFixed(1);
+            //     // })();
+            // },
 
             beforeRebindUiTable: function (oEvent) {
                 const oTable = this.byId("idUiTable"); // sap.ui.table.Table
@@ -1541,6 +1650,16 @@ sap.ui.define([
 
                 if (inputId === 'CostCenter') {
                     let sPath = await this.checkCostCenterPath(oInput)
+                    let singleCostCenter = await MatchcodesService.callGetService(sPath.path, sPath.filters).then(data => {
+                        if (data.results.length === 1) return data.results[0].costcenter;
+
+                        return false;
+                    })
+
+                    if (singleCostCenter) {
+                        oInput.setValue(singleCostCenter);
+                        return;
+                    }
 
                     if (sPath.path === '/MatchCodePlant') {
                         this.getFragment(`${inputId}HelpDialog`).then(oFragment => {
@@ -1638,6 +1757,7 @@ sap.ui.define([
 
                 return sPath;
             },
+
             onValueHelpOkPress: function (oEvent) {
                 const oTable = this.byId('table');
                 const regex = /--([a-zA-Z]+)--([a-zA-Z]+)/;
