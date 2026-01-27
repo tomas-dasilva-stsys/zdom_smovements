@@ -107,13 +107,26 @@ sap.ui.define([
                     return;
                 }
 
-                const valueExists = await this.checkValueExists(sProp, oInput.getValue());
+                if (sProp === 'Reason') {
+                    const valueExists = await this.checkReasonExists(oInput.getValue());
 
-                if (!valueExists) {
-                    oInput.setValueState('Error');
-                    oInput.setValueStateText(oResourceBundle.getText('invalidValueMsg', [oInput.getValue()]));
-                    return;
+                    if (!valueExists) {
+                        oInput.setValueState('Error');
+                        oInput.setValueStateText(oResourceBundle.getText('invalidValueMsg', [oInput.getValue()]));
+                        return;
+                    }
                 }
+
+                if (sProp === 'CostCenter') {
+                    const valueExists = await this.checkValueExists(sProp, oInput);
+
+                    if (!valueExists.isValid) {
+                        oInput.setValueState('Error');
+                        oInput.setValueStateText(oResourceBundle.getText('invalidValueMsg', [oInput.getValue()]));
+                        return;
+                    }
+                }
+
 
                 oInput.setValueState('None');
                 oInput.setValueStateText('');
@@ -135,9 +148,62 @@ sap.ui.define([
                 }
             },
 
-            checkValueExists: async function (sInputId, sValue) {
-                const matchCodePath = `/MatchCode${sInputId}`;
-                const oFilter = new Filter(sInputId, FilterOperator.EQ, sValue);
+            checkValueExists: async function (sInputId, oInput) {
+                const sValue = oInput.getValue();
+
+                try {
+                    let sPath = await this.checkCostCenterPath(oInput);
+
+                    // Función auxiliar para buscar en resultados paginados
+                    const findInPaginatedResults = async (path, filters) => {
+                        let currentPath = path;
+                        let currentFilters = filters;
+
+                        while (currentPath) {
+                            const oData = await MatchcodesService.callGetService(currentPath, currentFilters);
+
+                            // Buscar el valor en los resultados actuales
+                            if (oData.results && oData.results.length > 0) {
+                                const validResult = oData.results.find(result => {
+                                    const costCenter = result.CostCenter || result.costcenter;
+                                    return costCenter && costCenter.trim() === sValue.trim();
+                                });
+
+                                // Si encontramos el valor, retornamos inmediatamente
+                                if (validResult) {
+                                    return {
+                                        isValid: true,
+                                        expectedValue: validResult.CostCenter || validResult.costcenter
+                                    };
+                                }
+                            }
+
+                            // Verificar si hay más páginas
+                            if (oData.__next) {
+                                currentPath = oData.__next;
+                                currentFilters = null;
+                            } else {
+                                // No hay más páginas y no encontramos el valor
+                                currentPath = null;
+                            }
+                        }
+
+                        // No se encontró el valor en ninguna página
+                        return { isValid: false, expectedValue: null };
+                    };
+
+                    // Buscar el valor con paginación optimizada
+                    return await findInPaginatedResults(sPath.path, sPath.filters);
+
+                } catch (error) {
+                    console.error("Error en checkValueExists:", error);
+                    return { isValid: false, expectedValue: null };
+                }
+            },
+
+            checkReasonExists: async function (sValue) {
+                const matchCodePath = "/MatchCodeReason";
+                const oFilter = new Filter('Reason', FilterOperator.EQ, sValue);
 
                 try {
                     const oData = await MatchcodesService.callGetService(matchCodePath, [oFilter]);
@@ -146,6 +212,70 @@ sap.ui.define([
                     }
 
                     return true
+                } catch (error) {
+                    return false
+                }
+            },
+
+            checkValueExistsForMassFill: async function (sInputId, sCostCenter, oInput) {
+                const sValue = sCostCenter;
+                const oResourceBundle = this.getView().getModel("i18n").getResourceBundle();
+                try {
+                    // let sPath = await this.checkCostCenterPath(oInput)
+                    const oData = await MatchcodesService.callGetService('/MatchCodePlant', [new Filter('costcenter', FilterOperator.EQ, sCostCenter)]);
+
+                    if (oData.results.length === 0) {
+                        const response = await MatchcodesService.callGetService('/MatchCodeCostCenter', [new Filter('CostCenter', FilterOperator.EQ, sCostCenter)]);
+
+                        if (response.results.length === 0) {
+                            oInput.setValueState('Error');
+                            oInput.setValueStateText(oResourceBundle.getText("invalidValueMsg", [sCostCenter]));
+                            return false
+                        } else {
+                            oInput.setValueState('None');
+                            oInput.setValueStateText('');
+                            return true
+                        }
+                    }
+
+                    if (oData.results.length === 1) {
+                        const expectedValue = oData.results[0].costcenter;
+                        const isValid = expectedValue && expectedValue.trim() === sValue.trim();
+
+                        if (isValid) {
+                            oInput.setValueState('None');
+                            oInput.setValueStateText('');
+                            return true
+                        }
+
+                        if (!isValid) {
+                            oInput.setValueState('Error');
+                            oInput.setValueStateText(oResourceBundle.getText("invalidValueMsg", [sCostCenter]));
+                            return false
+                        }
+
+                        // return {
+                        //     isValid,
+                        //     expectedValue: [expectedValue]
+                        // };
+                    }
+
+                    // Si hay múltiples resultados, verificar que el valor exista en ellos
+                    const validResult = oData.results.find(result => {
+                        return ((result?.CostCenter || result?.costcenter) && (result.CostCenter === sValue.trim() || result.costcenter === sValue.trim()));
+                    });
+
+                    if (validResult) {
+                        oInput.setValueState('None');
+                        oInput.setValueStateText(oResourceBundle.getText("invalidValueMsg", [sCostCenter]));
+                        return true
+                    }
+
+                    if (!validResult) {
+                        oInput.setValueState('Error');
+                        oInput.setValueStateText(oResourceBundle.getText("invalidValueMsg", [sCostCenter]));
+                        return false
+                    }
                 } catch (error) {
                     return false
                 }
@@ -490,8 +620,10 @@ sap.ui.define([
                 // reset filters
                 if (oBinding) {
                     const oModel = oBinding.getModel();
-
                     oModel.resetChanges();
+
+                    this.clearTableInputs(tableItems);
+
                 }
 
                 if (this._exportFilters) {
@@ -510,48 +642,25 @@ sap.ui.define([
                     mBindingParams.events = {};
                 }
 
-                // Agregar nuevo listener
-                // mBindingParams.events = {
-                //     dataReceived: function (oDataEvent) {
-                //         let oData = oDataEvent.getParameter("data");
-
-                //         // Verificar que existan resultados
-                //         if (oData && oData.results && oData.results.length > 0) {
-                //             // Esperar a que la tabla termine de renderizar
-                //             oTable.attachEventOnce("updateFinished", function () {
-                //                 this.checkTableData(oData.results);
-                //             }.bind(this));
-                //         }
-                //     }.bind(this)
-                // };
-
                 let oSmtFilter = this.getView().byId("smartFilterBar");
-                let dateFrom = oSmtFilter.getControlByKey("DateFrom");
-                let dateTo = oSmtFilter.getControlByKey("DateTo");
-                let notificationCreationDate = oSmtFilter.getControlByKey("NotificationCreationDate");
-                // let notificationCreationTime = oSmtFilter.getControlByKey("NotificationCreationTime");
-                let productionOrder = oSmtFilter.getControlByKey("ProductionOrder");
-                let prodOperation = oSmtFilter.getControlByKey("ProductionOperation");
-                let zuser = oSmtFilter.getControlByKey("Zuser");
-                let material = oSmtFilter.getControlByKey("Component");
-                let plant = oSmtFilter.getControlByKey("Plant");
-                let workCenter = oSmtFilter.getControlByKey("WorkCenter");
-                let storageLocation = oSmtFilter.getControlByKey("StorageLocation");
-                let serialNumber = oSmtFilter.getControlByKey("SerialNumber");
-                let referenceNumber = oSmtFilter.getControlByKey("ReferenceNumber");
-                let equipment = oSmtFilter.getControlByKey("Equipment");
+                let dateFrom = oSmtFilter.getFilterGroupItems().find(item => item.getName() === "DateFrom")?.getControl();
+                let dateTo = oSmtFilter.getFilterGroupItems().find(item => item.getName() === "DateTo")?.getControl();
+                let notificationCreationDate = oSmtFilter.getFilterGroupItems().find(item => item.getName() === "NotificationCreationDate")?.getControl();
+                let productionOrder = oSmtFilter.getFilterGroupItems().find(item => item.getName() === "ProductionOrder")?.getControl();
+                let prodOperation = oSmtFilter.getFilterGroupItems().find(item => item.getName() === "ProductionOperation")?.getControl();
+                let zuser = oSmtFilter.getFilterGroupItems().find(item => item.getName() === "Zuser")?.getControl();
+                let material = oSmtFilter.getFilterGroupItems().find(item => item.getName() === "Component")?.getControl();
+                let plant = oSmtFilter.getFilterGroupItems().find(item => item.getName() === "Plant")?.getControl();
+                let workCenter = oSmtFilter.getFilterGroupItems().find(item => item.getName() === "WorkCenter")?.getControl();
+                let storageLocation = oSmtFilter.getFilterGroupItems().find(item => item.getName() === "StorageLocation")?.getControl();
+                let serialNumber = oSmtFilter.getFilterGroupItems().find(item => item.getName() === "SerialNumber")?.getControl();
+                let referenceNumber = oSmtFilter.getFilterGroupItems().find(item => item.getName() === "ReferenceNumber")?.getControl();
+                let equipment = oSmtFilter.getFilterGroupItems().find(item => item.getName() === "Equipment")?.getControl();
 
                 // getting filters values
                 let dateFromValue = dateFrom.getValue();
                 let dateToValue = dateTo.getValue();
                 let notificationCreationDateValue = notificationCreationDate.getValue();
-                // let notificationCreationTimeValue = notificationCreationTime.getValue();
-
-                // getting timeFrom and timeTo values
-                // let notCreationTimeFrom = this.byId("timeFrom").getValue();
-                // let notCreationTimeTo = this.byId("timeTo").getValue();
-                //
-
                 let prodOrderValues = productionOrder.getTokens().map(token => token.getKey());
                 let prodOperationValues = prodOperation.getTokens().map(token => token.getKey());
                 let zuserValues = zuser.getTokens().map(token => token.getKey());
@@ -679,82 +788,22 @@ sap.ui.define([
                 oTable.removeSelections(true);
             },
 
-            // checkTableData: function (aData) {
-            //     const oTable = this.byId("smartTable").getTable();
-            //     const CONCURRENT_REQUESTS = 50;
+            clearTableInputs: function (tableItems) {
+                tableItems.forEach(row => {
+                    const rowCells = row.getCells();
+                    rowCells.forEach(cell => {
+                        const cellId = cell.getId();
+                        // Resetear solo Reason y CostCenter
+                        if (cellId.includes('Reason') || cellId.includes('CostCenter')) {
+                            if (cell.isA && cell.isA("sap.m.Input")) {
+                                cell.setValueState("None");
+                                cell.setValueStateText("");
+                            }
+                        }
+                    });
+                });
 
-            //     const filterData = aData.map((item, index) => ({
-            //         index,
-            //         workcenter: item.WorkCenter,
-            //         plant: item.Plant
-            //     }));
-
-            //     let autoFilledCount = 0;
-            //     let processedCount = 0;
-            //     const totalCount = filterData.length;
-
-            //     // MessageToast.show(`Iniciando auto-completado de ${totalCount} registros...`);
-
-            //     // Dividir en chunks más pequeños para actualizar UI frecuentemente
-
-            //     // const processItem = async (item) => {
-            //     //     try {
-            //     //         let aFilter = [
-            //     //             new Filter("workcenter", FilterOperator.EQ, item.workcenter),
-            //     //             new Filter("plant", FilterOperator.EQ, item.plant)
-            //     //         ];
-
-            //     //         const response = await MatchcodesService.callGetService('/MatchCodePlant', aFilter);
-
-            //     //         if (response.results && response.results.length === 1) {
-            //     //             const costCenter = response.results[0].costcenter;
-
-            //     //             // Usar setTimeout para no bloquear el thread principal
-            //     //             setTimeout(() => {
-            //     //                 const oItem = oTable.getItems()[item.index];
-
-            //     //                 if (oItem) {
-            //     //                     const oCostCenterInput = oItem.getCells()[4];
-            //     //                     const oContext = oItem.getBindingContext();
-
-            //     //                     if (oContext && oCostCenterInput) {
-            //     //                         oContext.getModel().setProperty(
-            //     //                             oContext.getPath() + "/CostCenter",
-            //     //                             costCenter
-            //     //                         );
-
-            //     //                         oCostCenterInput.setEditable(false);
-            //     //                         oCostCenterInput.setShowValueHelp(false);
-            //     //                         autoFilledCount++;
-            //     //                     }
-            //     //                 }
-            //     //             }, 0);
-            //     //         }
-            //     //     } catch (error) {
-            //     //         console.error(`Error en item ${item.index}:`, error);
-            //     //     } finally {
-            //     //         processedCount++;
-            //     //     }
-            //     // };
-
-            //     // Procesar sin bloquear
-            //     // (async () => {
-            //     //     const startTime = Date.now();
-
-            //     //     for (let i = 0; i < filterData.length; i += CONCURRENT_REQUESTS) {
-            //     //         const chunk = filterData.slice(i, i + CONCURRENT_REQUESTS);
-            //     //         await Promise.all(chunk.map(processItem));
-
-            //     //         // Log cada 200 procesados
-            //     //         if (processedCount % 200 === 0) {
-            //     //             const elapsed = ((Date.now() - startTime) / 1000).toFixed(1);
-            //     //             console.log(`⏱ ${processedCount}/${totalCount} (${elapsed}s) - ${autoFilledCount} completados`);
-            //     //         }
-            //     //     }
-
-            //     //     const totalTime = ((Date.now() - startTime) / 1000).toFixed(1);
-            //     // })();
-            // },
+            },
 
             beforeRebindUiTable: function (oEvent) {
                 const oTable = this.byId("idUiTable"); // sap.ui.table.Table
@@ -762,18 +811,18 @@ sap.ui.define([
                 let oSmtFilter = this.getView().byId("smartFilterBar");
 
                 // getting filters controls
-                let dateFrom = oSmtFilter.getControlByKey("DateFrom");
-                let dateTo = oSmtFilter.getControlByKey("DateTo");
-                let productionOrder = oSmtFilter.getControlByKey("ProductionOrder");
-                let prodOperation = oSmtFilter.getControlByKey("ProductionOperation");
-                let zuser = oSmtFilter.getControlByKey("Zuser");
-                let material = oSmtFilter.getControlByKey("Component");
-                let plant = oSmtFilter.getControlByKey("Plant");
-                let workCenter = oSmtFilter.getControlByKey("WorkCenter");
-                let storageLocation = oSmtFilter.getControlByKey("StorageLocation");
-                let serialNumber = oSmtFilter.getControlByKey("SerialNumber");
-                let referenceNumber = oSmtFilter.getControlByKey("ReferenceNumber");
-                let equipment = oSmtFilter.getControlByKey("Equipment");
+                let dateFrom = oSmtFilter.getFilterGroupItems().find(item => item.getName() === "DateFrom")?.getControl();
+                let dateTo = oSmtFilter.getFilterGroupItems().find(item => item.getName() === "DateTo")?.getControl();
+                let productionOrder = oSmtFilter.getFilterGroupItems().find(item => item.getName() === "ProductionOrder")?.getControl();
+                let prodOperation = oSmtFilter.getFilterGroupItems().find(item => item.getName() === "ProductionOperation")?.getControl();
+                let zuser = oSmtFilter.getFilterGroupItems().find(item => item.getName() === "Zuser")?.getControl();
+                let material = oSmtFilter.getFilterGroupItems().find(item => item.getName() === "Component")?.getControl();
+                let plant = oSmtFilter.getFilterGroupItems().find(item => item.getName() === "Plant")?.getControl();
+                let workCenter = oSmtFilter.getFilterGroupItems().find(item => item.getName() === "WorkCenter")?.getControl();
+                let storageLocation = oSmtFilter.getFilterGroupItems().find(item => item.getName() === "StorageLocation")?.getControl();
+                let serialNumber = oSmtFilter.getFilterGroupItems().find(item => item.getName() === "SerialNumber")?.getControl();
+                let referenceNumber = oSmtFilter.getFilterGroupItems().find(item => item.getName() === "ReferenceNumber")?.getControl();
+                let equipment = oSmtFilter.getFilterGroupItems().find(item => item.getName() === "Equipment")?.getControl();
 
                 // getting filters values
                 let dateFromValue = dateFrom.getValue();
@@ -889,27 +938,6 @@ sap.ui.define([
                     this.byId("scrapToFreeBtn").setEnabled(false);
                     return;
                 }
-            },
-
-            _clearMassInputs: function () {
-                const oTable = this.byId("smartTable").getTable();
-                const oBinding = oTable.getBinding("rows");
-
-                if (!oBinding) {
-                    console.warn("No se encontró el binding de filas.");
-                    return;
-                }
-
-                const aContexts = oBinding.getContexts(0, oBinding.getLength());
-                const oModel = oBinding.getModel();
-
-                aContexts.forEach(oContext => {
-                    const sPath = oContext.getPath();
-
-                    // Limpia directamente en el modelo
-                    oModel.setProperty(sPath + "/Reason", "");
-                    oModel.setProperty(sPath + "/CostCenter", "");
-                });
             },
 
             setSmartFilters: function (mBindingParams, filterValues, filterKey) {
@@ -1302,48 +1330,65 @@ sap.ui.define([
             onValueHelpMassFillRequest: async function (oEvent) {
                 let currId = oEvent.getSource().getId();
                 let match = currId.split('-').pop();
+                let oInput = oEvent.getSource();
                 inputId = match;
 
                 if (inputId === 'CostCenter') {
                     let oTable = this.byId('table');
                     let selectedItems = oTable.getSelectedItems();
                     let uniqueWorkcenters = new Set(selectedItems.map(item => item.getBindingContext().getObject().WorkCenter));
-                    let uniquePlants = new Set(selectedItems.map(item => item.getBindingContext().getObject().Plant));
-
                     let workcentersArray = Array.from(uniqueWorkcenters);
-                    let plantArray = Array.from(uniquePlants);
+                    let aFilters = [];
 
-                    let aFilters = workcentersArray.map(wc => new Filter("workcenter", FilterOperator.EQ, wc));
-                    let wcFilters = new Filter({
+                    const uniqueRecords = Array.from(
+                        new Map(
+                            selectedItems.map(item => [
+                                `${item.getBindingContext().getObject().Plant}-${item.getBindingContext().getObject().WorkCenter}`, // clave única compuesta
+                                item // valor
+                            ])
+                        ).values()
+                    );
+
+                    uniqueRecords.forEach(item => {
+                        let combinedFilters = new Filter({
+                            filters: [
+                                new Filter('workcenter', FilterOperator.EQ, item.getBindingContext().getObject().WorkCenter),
+                                new Filter('plant', FilterOperator.EQ, item.getBindingContext().getObject().Plant)
+                            ],
+                            and: true
+                        })
+
+                        aFilters.push(combinedFilters)
+                    })
+
+                    let oFinalFilter = new Filter({
                         filters: aFilters,
                         and: false
                     })
 
-                    let pFilters = plantArray.map(pl => new Filter("plant", FilterOperator.EQ, pl));
-                    let plantFilters = new Filter({
-                        filters: pFilters,
-                        and: false
-                    })
+                    const matchcodeResult = await MatchcodesService.callGetService('/MatchCodePlant', [oFinalFilter]).then(data => {
+                        const resultWc = data.results.map(item => item.workcenter);
+                        const allWcExist = workcentersArray.every(wc => resultWc.includes(wc));
 
-                    let oCombinedFilter = new Filter({
-                        filters: [wcFilters, plantFilters],
-                        and: true
-                    })
+                        if (allWcExist) {
+                            if (data.results.length === 1) {
+                                oInput.setValue(data.results[0].costcenter);
+                                return 'noMatchCode';
+                            }
 
-                    const matchcodeResult = await MatchcodesService.callGetService('/MatchCodePlant', [oCombinedFilter]).then(data => {
-                        if (data.results.length > 0) {
-                            const resultWc = data.results.map(item => item.workcenter);
-                            const allWcExist = workcentersArray.every(wc => resultWc.includes(wc));
-
-                            if (allWcExist) {
-                                return { path: '/MatchCodePlant', filters: [oCombinedFilter], cols: 'CostCenter' }
-                            } else {
-                                return { path: '/MatchCodeCostCenter', filters: [], cols: 'CostCenterOld' };
+                            if (data.results.length > 1) {
+                                if (allWcExist) {
+                                    return { path: '/MatchCodePlant', filters: [oFinalFilter], cols: 'CostCenter' }
+                                } else {
+                                    return { path: '/MatchCodeCostCenter', filters: [], cols: 'CostCenterOld' };
+                                }
                             }
                         }
 
                         return { path: '/MatchCodeCostCenter', filters: [], cols: 'CostCenterOld' };
                     })
+
+                    if (matchcodeResult === 'noMatchCode') return;
 
                     this.getFragment(`MassFillCostCenterHelpDialog`).then(oFragment => {
                         oFragment.getTableAsync().then(function (oTable) {
@@ -1397,36 +1442,6 @@ sap.ui.define([
                         oFragment.open();
                     })
                 }
-
-
-
-                // currRowPosition = oEvent.getSource().getId().split('-').pop();
-
-
-
-                // this.getFragment(`MassFill${inputId}HelpDialog`).then(oFragment => {
-                //     oFragment.getTableAsync().then(function (oTable) {
-                //         oTable.setModel(MatchcodesService.getOdataModel());
-                //         let tableCols = AppJsonModel.getProperty(`/${inputId}`);
-                //         let currentJsonModel = new JSONModel({
-                //             "cols": tableCols
-                //         })
-
-                //         oTable.setModel(currentJsonModel, "columns");
-
-                //         if (oTable.bindRows) {
-                //             oTable.bindAggregation("rows", {
-                //                 path: currSpath.path,
-                //                 filters: oFilters,
-                //                 showHeader: false
-                //             });
-                //         }
-
-                //         oFragment.update();
-
-                //     });
-                //     oFragment.open();
-                // })
             },
 
             onValueHelpOkPressMassFill: function (oEvent) {
@@ -1459,6 +1474,201 @@ sap.ui.define([
                 }
             },
 
+            // onConfirmMassFillAction: async function (oEvent) {
+            //     const oTable = this.byId('table');
+            //     const oModel = oTable.getModel();
+            //     const oResourceBundle = this.getView().getModel("i18n").getResourceBundle();
+            //     const sReason = this.byId('MassFill-Reason').getValue().trim();
+            //     const sCostCenter = this.byId('MassFill-CostCenter').getValue().trim();
+            //     const aItems = oTable.getSelectedItems();
+
+            //     if (sReason === '' && sCostCenter === '') {
+            //         aItems.forEach(item => {
+            //             item.getCells().forEach(c => {
+            //                 if (c.getId().includes("Reason")) {
+            //                     c.setValue('');
+            //                     c.setValueState("None");
+            //                     c.setValueStateText('');
+            //                 }
+
+            //                 if (c.getId().includes("CostCenter")) {
+            //                     c.setValue('');
+            //                     c.setValueState("None");
+            //                     c.setValueStateText('');
+            //                 }
+            //             });
+            //         })
+
+            //         this.destroyFragments();
+            //         return;
+            //     }
+
+            //     // Mostrar BusyDialog
+            //     const oBusyDialog = new sap.m.BusyDialog({ text: oResourceBundle.getText("busyDialogTitle") });
+            //     oBusyDialog.open();
+
+            //     try {
+            //         // Resetear estados
+            //         this.byId('MassFill-CostCenter').setValueState("None");
+            //         this.byId('MassFill-CostCenter').setValueStateText('');
+            //         this.byId('MassFill-Reason').setValueState("None");
+            //         this.byId('MassFill-Reason').setValueStateText('');
+
+            //         // Validar Reason (global, no depende de la fila)
+            //         if (sReason) {
+            //             const reasonExists = await this.checkReasonExists(sReason);
+
+            //             if (!reasonExists) {
+            //                 this.byId('MassFill-Reason').setValueState("Error");
+            //                 this.byId('MassFill-Reason').setValueStateText(oResourceBundle.getText("invalidValueMsg", [sReason]));
+            //             }
+            //         }
+
+            //         const validationCache = new Map();
+
+            //         if (sCostCenter) {
+            //             // 1. Extraer combinaciones únicas de Plant-WorkCenter
+            //             const uniqueCombinations = new Map();
+
+            //             aItems.forEach(item => {
+            //                 const oCtx = item.getBindingContext();
+            //                 if (!oCtx) return;
+
+            //                 const plant = oCtx.getProperty('Plant');
+            //                 const workCenter = oCtx.getProperty('WorkCenter');
+            //                 const key = `${plant}-${workCenter}`;
+
+            //                 if (!uniqueCombinations.has(key)) {
+            //                     // Encontrar la celda de CostCenter para esta fila
+            //                     const costCenterCell = item.getCells().find(c => c.getId().includes("CostCenter"));
+            //                     uniqueCombinations.set(key, {
+            //                         plant,
+            //                         workCenter,
+            //                         cell: costCenterCell,
+            //                         items: []
+            //                     });
+            //                 }
+
+            //                 uniqueCombinations.get(key).items.push(item);
+            //             });
+
+            //             // 2. Validar solo las combinaciones únicas (en paralelo)
+            //             await Promise.all(
+            //                 Array.from(uniqueCombinations.values()).map(async (combo) => {
+            //                     const { isValid } = await this.checkValueExists('CostCenter', combo.cell);
+            //                     const key = `${combo.plant}-${combo.workCenter}`;
+            //                     validationCache.set(key, isValid);
+            //                 })
+            //             );
+
+            //             // 3. Verificar si hay algún error
+            //             const hasErrors = Array.from(validationCache.values()).some(valid => !valid);
+            //             if (hasErrors) {
+            //                 this.byId('MassFill-CostCenter').setValueState("Error");
+            //                 this.byId('MassFill-CostCenter').setValueStateText(
+            //                     oResourceBundle.getText("invalidValueMsg", [sCostCenter])
+            //                 );
+            //             }
+            //         }
+
+            //         if (!reasonValid || this.byId('MassFill-CostCenter').getValueState() === "Error") {
+            //             return;
+            //         }
+
+            //         // // Aplicar cambios solo si todo es válido
+            //         aItems.forEach(item => {
+            //             const oCtx = item.getBindingContext();
+            //             if (!oCtx) return;
+
+            //             const sPath = oCtx.getPath();
+
+            //             this._mMassChanges[sPath] = {
+            //                 ...(this._mMassChanges[sPath] || {}),
+            //                 ...(sReason && { Reason: sReason }),
+            //                 ...(sCostCenter && { CostCenter: sCostCenter })
+            //             };
+            //         });
+
+            //         await Promise.all(
+            //             aItems.flatMap(item =>
+            //                 item.getCells().map(async (c) => {
+            //                     if (sReason && c.getId().includes("Reason")) {
+            //                         c.setValue(sReason);
+            //                     }
+            //                     if (sCostCenter && c.getId().includes("CostCenter")) {
+            //                         c.setValue(sCostCenter);
+            //                         const { isValid } = await this.checkValueExists('CostCenter', c);
+            //                         if (!isValid) {
+            //                             c.setValueState("Error");
+            //                             c.setValueStateText(oResourceBundle.getText("invalidValueMsg", [sCostCenter]));
+            //                         }
+            //                     }
+            //                 })
+            //             )
+            //         );
+
+            //         // Si todo está OK, cerrar el fragment
+            //         this.destroyFragments();
+
+            //         // if (sCostCenter) {
+            //         //     const costCenterExists = await this.checkValueExistsForMassFill('CostCenter', sCostCenter, this.byId('MassFill-CostCenter'));
+
+            //         //     if (!costCenterExists) {
+            //         //         this.byId('MassFill-CostCenter').setValueState("Error");
+            //         //         this.byId('MassFill-CostCenter').setValueStateText(oResourceBundle.getText("invalidValueMsg", [sCostCenter]));
+            //         //     }
+            //         // }
+
+            //         // if (this.byId('MassFill-Reason').getValueState() === "Error" || this.byId('MassFill-CostCenter').getValueState() === "Error") {
+            //         //     return;
+            //         // }
+
+            //         // // Aplicar cambios solo si todo es válido
+            //         // aItems.forEach(item => {
+            //         //     const oCtx = item.getBindingContext();
+            //         //     if (!oCtx) return;
+
+            //         //     const sPath = oCtx.getPath();
+
+            //         //     this._mMassChanges[sPath] = {
+            //         //         ...(this._mMassChanges[sPath] || {}),
+            //         //         ...(sReason && { Reason: sReason }),
+            //         //         ...(sCostCenter && { CostCenter: sCostCenter })
+            //         //     };
+            //         // });
+
+            //         // await Promise.all(
+            //         //     aItems.flatMap(item =>
+            //         //         item.getCells().map(async (c) => {
+            //         //             if (sReason && c.getId().includes("Reason")) {
+            //         //                 c.setValue(sReason);
+            //         //             }
+            //         //             if (sCostCenter && c.getId().includes("CostCenter")) {
+            //         //                 c.setValue(sCostCenter);
+            //         //                 const { isValid } = await this.checkValueExists('CostCenter', c);
+            //         //                 if (!isValid) {
+            //         //                     c.setValueState("Error");
+            //         //                     c.setValueStateText(oResourceBundle.getText("invalidValueMsg", [sCostCenter]));
+            //         //                 }
+            //         //             }
+            //         //         })
+            //         //     )
+            //         // );
+
+            //         // // Si todo está OK, cerrar el fragment
+            //         // this.destroyFragments();
+
+            //     } catch (error) {
+            //         console.error("Error en mass fill:", error);
+            //         MessageBox.error(oResourceBundle.getText("errorMsg") || "Error al procesar");
+            //     } finally {
+            //         // Cerrar BusyDialog siempre
+            //         oBusyDialog.close();
+            //         oBusyDialog.destroy();
+            //     }
+            // },
+
+
             onConfirmMassFillAction: async function (oEvent) {
                 const oTable = this.byId('table');
                 const oModel = oTable.getModel();
@@ -1467,103 +1677,234 @@ sap.ui.define([
                 const sCostCenter = this.byId('MassFill-CostCenter').getValue().trim();
                 const aItems = oTable.getSelectedItems();
 
-                if (sReason) {
-                    const reasonExists = await this.checkValueExists('Reason', sReason);
-
-                    if (!reasonExists) {
-                        this.byId('MassFill-Reason').setValueState("Error");
-                        this.byId('MassFill-Reason').setValueStateText(oResourceBundle.getText("invalidValueMsg", [sReason]));
-                        this.byId('MassFill-CostCenter').setValueState("None");
-                        this.byId('MassFill-CostCenter').setValueStateText('');
-                    }
+                if (sReason === '' && sCostCenter === '') {
+                    aItems.forEach(item => {
+                        item.getCells().forEach(c => {
+                            if (c.getId().includes("Reason")) {
+                                c.setValue('');
+                                c.setValueState("None");
+                                c.setValueStateText('');
+                            }
+                            if (c.getId().includes("CostCenter")) {
+                                c.setValue('');
+                                c.setValueState("None");
+                                c.setValueStateText('');
+                            }
+                        });
+                    })
+                    this.destroyFragments();
+                    return;
                 }
 
-                if (sCostCenter) {
-                    const costCenterExists = await this.checkValueExists('CostCenter', sCostCenter);
+                const oBusyDialog = new sap.m.BusyDialog({ text: oResourceBundle.getText("busyDialogTitle") });
+                oBusyDialog.open();
 
-                    if (!costCenterExists) {
-                        this.byId('MassFill-CostCenter').setValueState("Error");
-                        this.byId('MassFill-CostCenter').setValueStateText(oResourceBundle.getText("invalidValueMsg", [sCostCenter]));
-                        this.byId('MassFill-Reason').setValueState("None");
-                        this.byId('MassFill-Reason').setValueStateText('');
+                try {
+                    // Resetear estados
+                    this.byId('MassFill-CostCenter').setValueState("None");
+                    this.byId('MassFill-CostCenter').setValueStateText('');
+                    this.byId('MassFill-Reason').setValueState("None");
+                    this.byId('MassFill-Reason').setValueStateText('');
+
+                    let reasonValid = true;
+
+                    // Validar Reason UNA SOLA VEZ
+                    if (sReason) {
+                        reasonValid = await this.checkReasonExists(sReason);
+                        if (!reasonValid) {
+                            this.byId('MassFill-Reason').setValueState("Error");
+                            this.byId('MassFill-Reason').setValueStateText(oResourceBundle.getText("invalidValueMsg", [sReason]));
+                        }
                     }
-                }
 
-                if (this.byId('MassFill-Reason').getValueState() === "Error" || this.byId('MassFill-CostCenter').getValueState() === "Error") return;
+                    // OPTIMIZACIÓN: Validar solo combinaciones únicas de Plant + WorkCenter
+                    const validationCache = new Map();
 
-                // if (!reasonExists && !costCenterExists) {
-                //     this.byId('MassFill-Reason').setValueState("Error");
-                //     this.byId('MassFill-Reason').setValueStateText(oResourceBundle.getText("invalidValueMsg", [sReason]));
-                //     this.byId('MassFill-CostCenter').setValueState("Error");
-                //     this.byId('MassFill-CostCenter').setValueStateText(oResourceBundle.getText("invalidValueMsg", [sCostCenter]));
-                //     return;
-                // }
+                    if (sCostCenter) {
+                        // primero chequear si el valor ingresado en el input existe globalmente
+                        const costCenterValidation = await MatchcodesService.callGetService('/MatchCodeCostCenter', [new Filter('CostCenter', FilterOperator.EQ, sCostCenter)]).then(data => {
+                            if (data.results.length > 0) {
+                                return { isValid: true };
+                            }
 
-                this.byId('MassFill-CostCenter').setValueState("None");
-                this.byId('MassFill-CostCenter').setValueStateText('');
-                this.byId('MassFill-Reason').setValueState("None");
-                this.byId('MassFill-Reason').setValueStateText('');
+                            return { isValid: false };
+                        })
 
-                aItems.forEach(item => {
-                    const oCtx = item.getBindingContext();
-                    if (!oCtx) return;
+                        if (!costCenterValidation.isValid) {
+                            this.byId('MassFill-CostCenter').setValueState("Error");
+                            this.byId('MassFill-CostCenter').setValueStateText(oResourceBundle.getText("invalidValueMsg", [sCostCenter]));
+                            return;
+                        }
 
-                    const sPath = oCtx.getPath();
+                        // 1. Extraer combinaciones únicas de Plant-WorkCenter
+                        const uniqueCombinations = new Map();
 
-                    this._mMassChanges[sPath] = {
-                        ...(this._mMassChanges[sPath] || {}),
-                        Reason: sReason,
-                        CostCenter: sCostCenter
-                    };
+                        aItems.forEach(item => {
+                            const oCtx = item.getBindingContext();
+                            if (!oCtx) return;
 
-                    // UI inmediata (rápida)
-                    item.getCells().forEach(c => {
-                        if (c.getId().includes("Reason")) c.setValue(sReason);
-                        if (c.getId().includes("CostCenter")) c.setValue(sCostCenter);
+                            const plant = oCtx.getProperty('Plant');
+                            const workCenter = oCtx.getProperty('WorkCenter');
+                            const key = `${plant}-${workCenter}`;
+
+                            if (!uniqueCombinations.has(key)) {
+                                // Encontrar la celda de CostCenter para esta fila (solo para validación)
+                                const costCenterCell = item.getCells().find(c => c.getId().includes("CostCenter"));
+                                if (costCenterCell) {
+                                    // Clonar temporalmente para validar sin modificar la UI aún
+                                    const tempCell = {
+                                        getValue: () => sCostCenter,
+                                        getBindingContext: () => oCtx
+                                    };
+
+                                    uniqueCombinations.set(key, {
+                                        plant,
+                                        workCenter,
+                                        cell: tempCell
+                                    });
+                                }
+                            }
+                        });
+
+                        // 2. Validar solo las combinaciones únicas (en paralelo)
+                        const validationResults = await Promise.all(
+                            Array.from(uniqueCombinations.entries()).map(async ([key, combo]) => {
+                                const result = await this.checkValueExists('CostCenter', combo.cell);
+                                return { key, result };
+                            })
+                        );
+
+                        // 3. Guardar resultados en caché
+                        validationResults.forEach(({ key, result }) => {
+                            validationCache.set(key, result);
+                        });
+
+                        // 4. Verificar si hay algún error
+                        const hasErrors = Array.from(validationCache.values()).some(result => !result.isValid);
+                        // if (hasErrors) {
+                        //     this.byId('MassFill-CostCenter').setValueState("Error");
+                        //     this.byId('MassFill-CostCenter').setValueStateText(
+                        //         oResourceBundle.getText("invalidValueMsg", [sCostCenter])
+                        //     );
+                        // }
+                    }
+
+                    if (!reasonValid || this.byId('MassFill-CostCenter').getValueState() === "Error") {
+                        return;
+                    }
+
+                    // 5. Aplicar cambios a TODAS las filas
+                    aItems.forEach(item => {
+                        const oCtx = item.getBindingContext();
+                        if (!oCtx) return;
+
+                        const sPath = oCtx.getPath();
+                        const plant = oCtx.getProperty('Plant');
+                        const workCenter = oCtx.getProperty('WorkCenter');
+                        const key = `${plant}-${workCenter}`;
+
+                        // Guardar en _mMassChanges
+                        this._mMassChanges[sPath] = {
+                            ...(this._mMassChanges[sPath] || {}),
+                            ...(sReason && { Reason: sReason }),
+                            ...(sCostCenter && { CostCenter: sCostCenter })
+                        };
+
+                        // Aplicar valores a TODAS las celdas de esta fila
+                        item.getCells().forEach(c => {
+                            if (sReason && c.getId().includes("Reason")) {
+                                c.setValue(sReason);
+                                c.setValueState("None");
+                                c.setValueStateText('');
+                            }
+
+                            if (sCostCenter && c.getId().includes("CostCenter")) {
+                                // SIEMPRE setear el valor
+                                c.setValue(sCostCenter);
+
+                                // Aplicar estado según el caché de validación
+                                const validationResult = validationCache.get(key);
+
+                                if (validationResult && !validationResult.isValid) {
+                                    c.setValueState("Error");
+                                    c.setValueStateText(oResourceBundle.getText("invalidValueMsg", [sCostCenter]));
+                                } else {
+                                    c.setValueState("None");
+                                    c.setValueStateText('');
+                                }
+                            }
+                        });
                     });
-                });
 
-                this.destroyFragments();
+                    this.destroyFragments();
+
+                } catch (error) {
+                    console.error("Error en mass fill:", error);
+                    MessageBox.error(oResourceBundle.getText("errorMsg") || "Error al procesar");
+                } finally {
+                    oBusyDialog.close();
+                    oBusyDialog.destroy();
+                }
+            },
+
+            checkCostCenterMassFillExists: async function (sCostCenter) {
+                const oTable = this.byId('table');
+                const aItems = oTable.getSelectedItems();
+                const oResourceBundle = this.getView().getModel("i18n").getResourceBundle();
+
+                for (let i = 0; i < aItems.length; i++) {
+                    const item = aItems[i];
+                    const oCtx = item.getBindingContext();
+                    if (!oCtx) continue;
+                    // Obtener el input de CostCenter de esta fila
+                    const oCostCenterInput = item.getCells().find(c => c.getId().includes("CostCenter"));
+                    if (oCostCenterInput) {
+                        const validation = await this.checkValueExistsForMassFill('CostCenter', sCostCenter, oCtx);
+                        if (!validation.isValid) {
+                            // Setear el valor en el input de la fila
+                        }
+                    }
+                }
             },
 
             // SAP.UI.TABLE VARIANT
-            onConfirmMassFillActionUiTable: function (oEvent) {
-                const that = this;
-                const oTable = this.byId("idUiTable");
-                const oResourceBundle = this.getView().getModel("i18n").getResourceBundle();
-                const regex = /--([a-zA-Z]+)--([a-zA-Z]+)/;
-                const reasonInput = this.byId("MassFill-Reason");
-                const costCenterInput = this.byId("MassFill-CostCenter");
+            // onConfirmMassFillActionUiTable: function (oEvent) {
+            //     const that = this;
+            //     const oTable = this.byId("idUiTable");
+            //     const oResourceBundle = this.getView().getModel("i18n").getResourceBundle();
+            //     const regex = /--([a-zA-Z]+)--([a-zA-Z]+)/;
+            //     const reasonInput = this.byId("MassFill-Reason");
+            //     const costCenterInput = this.byId("MassFill-CostCenter");
 
-                // obtener índices seleccionados
-                const aSelectedIndices = oTable.getSelectedIndices();
+            //     // obtener índices seleccionados
+            //     const aSelectedIndices = oTable.getSelectedIndices();
 
-                aSelectedIndices.forEach(iIndex => {
-                    // obtener la fila visible (ojo con el scroll)
-                    let oRow = oTable.getRows()[iIndex - oTable.getFirstVisibleRow()];
-                    if (!oRow) return;
+            //     aSelectedIndices.forEach(iIndex => {
+            //         // obtener la fila visible (ojo con el scroll)
+            //         let oRow = oTable.getRows()[iIndex - oTable.getFirstVisibleRow()];
+            //         if (!oRow) return;
 
-                    let aCells = oRow.getCells();
+            //         let aCells = oRow.getCells();
 
-                    // completar Reason
-                    let oReasonCell = aCells
-                        .filter(cell => cell.getId().match(regex))
-                        .find(cell => cell.sId.includes("Reason"));
-                    if (oReasonCell && oReasonCell.setValue) {
-                        oReasonCell.setValue(reasonInput.getValue().trim());
-                    }
+            //         // completar Reason
+            //         let oReasonCell = aCells
+            //             .filter(cell => cell.getId().match(regex))
+            //             .find(cell => cell.sId.includes("Reason"));
+            //         if (oReasonCell && oReasonCell.setValue) {
+            //             oReasonCell.setValue(reasonInput.getValue().trim());
+            //         }
 
-                    // completar CostCenter
-                    let oCostCenterCell = aCells
-                        .filter(cell => cell.getId().match(regex))
-                        .find(cell => cell.sId.includes("CostCenter"));
-                    if (oCostCenterCell && oCostCenterCell.setValue) {
-                        oCostCenterCell.setValue(costCenterInput.getValue().trim());
-                    }
-                });
+            //         // completar CostCenter
+            //         let oCostCenterCell = aCells
+            //             .filter(cell => cell.getId().match(regex))
+            //             .find(cell => cell.sId.includes("CostCenter"));
+            //         if (oCostCenterCell && oCostCenterCell.setValue) {
+            //             oCostCenterCell.setValue(costCenterInput.getValue().trim());
+            //         }
+            //     });
 
-                that.destroyFragments();
-            },
+            //     that.destroyFragments();
+            // },
 
             onValueHelpRequest: function (oEvent) {
                 let currId = oEvent.getSource().getId();
@@ -2125,7 +2466,7 @@ sap.ui.define([
                 }
 
                 this.getFragment(`${inputId}HelpDialog`).then(function (oFragment) {
-                    oFragment.close();
+                    oFragment.exit();
                 });
 
                 this.destroyFragments();

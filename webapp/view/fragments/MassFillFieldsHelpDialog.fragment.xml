@@ -52,6 +52,7 @@
             required="true"
             change="onInputMassFillChange"
             class="sapUiSmallMarginBottom"
+            maxLength="10"
         />
         <VBox
             direction="Row"

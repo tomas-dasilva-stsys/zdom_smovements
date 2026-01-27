@@ -603,19 +603,6 @@
                                     maxLength="4"
                                     value="{Reason}"
                                 />
-
-                                <!-- COMBOBOX OPTION -->
-                                <!-- <ComboBox
-                                    items="{
-                                        path: 'testModel>/',
-                                        sorter: {path: 'testModel>text'}
-                                    }"
-                                >
-                                    <core:Item
-                                        key="{key}"
-                                        text="{testModel>text}"
-                                    />
-                                </ComboBox> -->
                             </cells>
                             <cells>
                                 <Input
@@ -626,19 +613,6 @@
                                     change="onInputChange"
                                     value="{CostCenter}"
                                 />
-
-                                <!-- COMBOBOX OPTION -->
-                                <!-- <ComboBox
-                                    items="{
-                                        path: 'testModel>/',
-                                        sorter: {path: 'testModel>text'}
-                                    }"
-                                >
-                                    <core:Item
-                                        key="{key}"
-                                        text="{testModel>text}"
-                                    />
-                                </ComboBox> -->
                             </cells>
                             <cells>
                                 <Text
