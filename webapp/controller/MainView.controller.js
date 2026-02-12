@@ -161,6 +161,7 @@ sap.ui.define([
 
                         while (currentPath) {
                             const oData = await MatchcodesService.callGetService(currentPath, currentFilters);
+                            const next = oData.__next;
 
                             // Buscar el valor en los resultados actuales
                             if (oData.results && oData.results.length > 0) {
@@ -179,7 +180,16 @@ sap.ui.define([
                             }
 
                             // Verificar si hay más páginas
-                            if (oData.__next) {
+                            if (next) {
+                                const idx = next.indexOf(entitySet.replace("/", ""));
+                                if (idx > -1) {
+                                    currentPath = "/" + next.substring(idx);
+                                } else {
+                                    // quitar host+service completo
+                                    const clean = next.replace(oModel.sServiceUrl, "");
+                                    currentPath = clean.startsWith("/") ? clean : "/" + clean;
+                                }
+
                                 currentPath = oData.__next;
                                 currentFilters = null;
                             } else {
@@ -2100,14 +2110,19 @@ sap.ui.define([
             checkCostCenterPath: async function (oInput) {
                 const currWorkcenter = oInput.getBindingContext().getObject().WorkCenter;
                 const currentPlant = oInput.getBindingContext().getObject().Plant;
+                const currInputValue = oInput.getValue();
                 const aFilter = [new Filter('workcenter', FilterOperator.EQ, currWorkcenter), new Filter('plant', FilterOperator.EQ, currentPlant)];
 
-                const sPath = MatchcodesService.callGetService('/MatchCodePlant', aFilter).then(data => {
+                const sPath = await MatchcodesService.callGetService('/MatchCodePlant', aFilter).then(data => {
                     if (data.results.length > 0) {
                         return { path: '/MatchCodePlant', filters: aFilter };
                     }
 
-                    return { path: '/MatchCodeCostCenter', filters: [] };
+                    if (!currInputValue.trim()) {
+                        return { path: '/MatchCodeCostCenter', filters: [] };
+                    }
+
+                    return { path: '/MatchCodeCostCenter', filters: [new Filter('CostCenter', FilterOperator.EQ, currInputValue)] };
                 });
 
                 return sPath;

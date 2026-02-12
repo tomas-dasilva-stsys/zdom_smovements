@@ -17,32 +17,32 @@
                 <fb:filterGroupItems>
                     <fb:FilterGroupItem
                         groupName="__$INTERNAL$"
-                        name="costcenter"
+                        name="CostCenter"
                         label="{i18n>costcenter}"
                         visibleInFilterBar="true"
                     >
                         <fb:control>
-                            <m:Input name="costcenter" submit="onSubmitMassFillFilters"/>
+                            <m:Input name="CostCenter" submit="onSubmitMassFillFilters"/>
                         </fb:control>
                     </fb:FilterGroupItem>
                     <fb:FilterGroupItem
                         groupName="__$INTERNAL$"
-                        name="plant"
-                        label="{i18n>plant}"
+                        name="ControllingArea"
+                        label="{i18n>controllingArea}"
                         visibleInFilterBar="true"
                     >
                         <fb:control>
-                            <m:Input name="plant" submit="onSubmitMassFillFilters"/>
+                            <m:Input name="ControllingArea" submit="onSubmitMassFillFilters"/>
                         </fb:control>
                     </fb:FilterGroupItem>
                     <fb:FilterGroupItem
                         groupName="__$INTERNAL$"
-                        name="workcenter"
-                        label="{i18n>workcenter}"
+                        name="Name"
+                        label="{i18n>name}"
                         visibleInFilterBar="true"
                     >
                         <fb:control>
-                            <m:Input name="workcenter" submit="onSubmitMassFillFilters"/>
+                            <m:Input name="Name" submit="onSubmitMassFillFilters"/>
                         </fb:control>
                     </fb:FilterGroupItem>
                 </fb:filterGroupItems>
