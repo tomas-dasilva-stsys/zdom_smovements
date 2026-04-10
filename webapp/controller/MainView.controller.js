@@ -62,10 +62,11 @@ sap.ui.define([
                 }
             },
 
-            onInit: function () {
+            onInit: async function () {
                 AppJsonModel.initializeModel();
                 let oView = this.getView();
                 let oModel = this.getOwnerComponent().getModel();
+                let userInfo = await this.getUserInfo();
 
                 oView.setModel(oModel);
                 this._mDialogs = {};
@@ -82,6 +83,43 @@ sap.ui.define([
                 oMessagePopover.setModel(popModel);
                 this._localChangesModel = new sap.ui.model.json.JSONModel({});
                 this.getView().setModel(this._localChangesModel, "localChanges");
+
+                if (userInfo) {
+                    this.setUserPlant(userInfo);
+                }
+            },
+
+            getUserInfo: async function () {
+                try {
+                    const response = await fetch("/sap/bc/ui2/start_up");
+                    const data = await response.json();
+                    if (data?.id) {
+                        // Test example
+                        // const oData = await MatchcodesService.callGetService('/GetPlant', [new Filter('uname', FilterOperator.EQ, 'IROSS')]);
+
+                        const oData = await MatchcodesService.callGetService('/GetPlant', [new Filter('uname', FilterOperator.EQ, data.id)]);
+
+                        if (oData.results.length > 0) {
+                            const filteredData = oData.results.filter(item => item.Plant !== "' '")
+                            return filteredData;
+                        }
+                    }
+
+                    return false;
+                } catch (e) {
+                    console.warn("start_up falló:", e);
+                }
+            },
+
+            setUserPlant: function (userInfo) {
+                let oSmtFilter = this.getView().byId("smartFilterBar");
+                let plantFilterItem = oSmtFilter.getFilterGroupItems().find(item => item.getName() === "Plant");
+
+                if (userInfo.length === 1) {
+                    const plant = userInfo[0].Plant;
+                    AppJsonModel.setInnerProperty('/FilterValues', 'Plant', [{ key: plant, text: plant }]);
+                    plantFilterItem.getControl().setEnabled(false);
+                }
             },
 
             onInputChange: async function (oEvent) {
@@ -577,7 +615,6 @@ sap.ui.define([
                 scrapToFreeBtn.setEnabled(false);
             },
 
-
             onUpdateFinished: function () {
                 let table = this.getView().byId('table');
                 let selectedItems = table.getSelectedItems();
@@ -675,7 +712,10 @@ sap.ui.define([
                 let prodOperationValues = prodOperation.getTokens().map(token => token.getKey());
                 let zuserValues = zuser.getTokens().map(token => token.getKey());
                 let materialValues = material.getTokens().map(token => token.getKey());
+
+                let singlePlantValue = plant.getValue();
                 let plantValues = plant.getTokens().map(token => token.getKey());
+
                 let workCenterValues = workCenter.getTokens().map(token => token.getKey());
                 let storageLocationValues = storageLocation.getTokens().map(token => token.getKey());
                 let serialNumberValues = serialNumber.getTokens().map(token => token.getKey());
@@ -700,6 +740,10 @@ sap.ui.define([
 
                 if (plantValues.length > 0) {
                     this.setSmartFilters(mBindingParams, plantValues, "Plant");
+                }
+
+                if (singlePlantValue) {
+                    mBindingParams.filters.push(new Filter("Plant", FilterOperator.EQ, singlePlantValue));
                 }
 
                 if (workCenterValues.length > 0) {
@@ -799,7 +843,9 @@ sap.ui.define([
             },
 
             clearTableInputs: function (tableItems) {
-                tableItems.forEach(row => {
+                let tableRows = tableItems.filter(item => !item.mProperties.title)
+
+                tableRows.forEach(row => {
                     const rowCells = row.getCells();
                     rowCells.forEach(cell => {
                         const cellId = cell.getId();
