@@ -330,6 +330,69 @@
                         </MultiInput>
                     </smartfilterbar:customControl>
                 </smartfilterbar:ControlConfiguration>
+
+                <smartfilterbar:ControlConfiguration
+                    groupId="FILTERS"
+                    key="HandlingUnit"
+                    visibleInAdvancedArea="true"
+                    label="{i18n>handlingUnit}"
+                >
+                    <smartfilterbar:customControl>
+                        <!-- <Input
+                            id="Equipment"
+                            showValueHelp="true"
+                            valueHelpRequest="onValueHelpRequest"
+                        /> -->
+                        <MultiInput
+                            id="HandlingUnit"
+                            showValueHelp="true"
+                            valueHelpRequest="onValueHelpRequest"
+                            tokens="{AppJsonModel>/FilterValues/HandlingUnit}"
+                            tokenUpdate="onTokenUpdate"
+                            change="onChange"
+                            width="100%"
+                        >
+                            <tokens>
+                                <Token
+                                    key="{AppJsonModel>key}"
+                                    text="{AppJsonModel>text}"
+                                />
+                            </tokens>
+                        </MultiInput>
+                    </smartfilterbar:customControl>
+                </smartfilterbar:ControlConfiguration>
+
+                <smartfilterbar:ControlConfiguration
+                    groupId="FILTERS"
+                    key="Batch"
+                    visibleInAdvancedArea="true"
+                    label="{i18n>batch}"
+                >
+                    <smartfilterbar:customControl>
+                        <!-- <Input
+                            id="Equipment"
+                            showValueHelp="true"
+                            valueHelpRequest="onValueHelpRequest"
+                        /> -->
+                        <MultiInput
+                            id="Batch"
+                            showValueHelp="true"
+                            valueHelpRequest="onValueHelpRequest"
+                            tokens="{AppJsonModel>/FilterValues/Batch}"
+                            tokenUpdate="onTokenUpdate"
+                            change="onChange"
+                            width="100%"
+                        >
+                            <tokens>
+                                <Token
+                                    key="{AppJsonModel>key}"
+                                    text="{AppJsonModel>text}"
+                                />
+                            </tokens>
+                        </MultiInput>
+                    </smartfilterbar:customControl>
+                </smartfilterbar:ControlConfiguration>
+
                 <smartfilterbar:ControlConfiguration
                     groupId="FILTERS"
                     key="DateFrom"
@@ -396,8 +459,8 @@
                 header="{i18n>header}"
                 smartFilterId="smartFilterBar"
                 entitySet="ScrapMovements"
-                initiallyVisibleFields="BlockedQuantity,ScrapQuantity,FreeQuantity,Reason,CostCenter,ProductionOrder,ProductionOperation,Time,Zuser,Component,Plant,WorkCenter,StorageLocation,SerialNumber,Element,Cause,RepairCode,Equipment,EquipmentDescription,DNIEquipment,NotificationCreationDate,NotificationCreationTime"
-                requestAtLeastFields="ProductionOrder,ProductionOperation,Charg,Component,ItemNumber,StorageLocation,NotificationType,NotificationNumber,SerialNumber,UnitOfMeasure,Plant,ReserveNumber,Quantity,Material,BomNumber,ReferenceNumber,Equipment,EquipmentDescription,DNIEquipment,NotificationCreationDate"
+                initiallyVisibleFields="BlockedQuantity,ScrapQuantity,FreeQuantity,Reason,CostCenter,ProductionOrder,ProductionOperation,Time,Zuser,Component,Plant,WorkCenter,StorageLocation,SerialNumber,Element,Cause,RepairCode,Equipment,EquipmentDescription,DNIEquipment,NotificationCreationDate,NotificationCreationTime,HandlingUnit,Batch"
+                requestAtLeastFields="ProductionOrder,ProductionOperation,Charg,Component,ItemNumber,StorageLocation,NotificationType,NotificationNumber,SerialNumber,UnitOfMeasure,Plant,ReserveNumber,Quantity,Material,BomNumber,ReferenceNumber,Equipment,EquipmentDescription,DNIEquipment,NotificationCreationDate,HandlingUnit,Batch"
                 height="100%"
                 persistencyKey="SmartTable_Explored"
                 beforeRebindTable="beforeRebind"
@@ -804,9 +867,24 @@
                     class="sapUiSmallMarginBeginEnd"
                     text="{i18n>stockTransferBtn}"
                     enabled="false"
-                    press="checkTransferMovement"
+                    press="openPrintLabels"
                     type="Emphasized"
-                />
+                >
+                    <customData>
+                        <core:CustomData
+                            key="multi"
+                            value="true"
+                        />
+                        <core:CustomData
+                            key="remember"
+                            value="true"
+                        />
+                        <core:CustomData
+                            key="draggable"
+                            value="true"
+                        />
+                    </customData>
+                </Button>
             </OverflowToolbar>
         </footer>
     </Page>

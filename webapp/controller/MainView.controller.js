@@ -12,6 +12,8 @@ sap.ui.define([
     "sap/m/MessageBox",
     "zdomscrapmovements/model/Formatter",
     "sap/ui/export/Spreadsheet",
+    "sap/m/Dialog",
+    "sap/ui/core/syncStyleClass",
 ],
     function (Controller,
         JSONModel,
@@ -25,7 +27,10 @@ sap.ui.define([
         MatchcodesService,
         MessageBox,
         Formatter,
-        Spreadsheet) {
+        Spreadsheet,
+        Dialog,
+        syncStyleClass
+    ) {
         "use strict";
         let inputId;
         let currRowPosition;
@@ -424,7 +429,9 @@ sap.ui.define([
                     'SerialNumber': { path: '/MatchCodeSerialNumberScrapMov' },
                     'Zuser': { path: '/MatchCodeUserScrapMov' },
                     'ReferenceNumber': { path: '/MatchCodeReferenceNumber' },
-                    'Equipment': { path: '/MatchCodeEquipment2' }
+                    'Equipment': { path: '/MatchCodeEquipment2' },
+                    'HandlingUnit': { path: '/MatchCodeHu' },
+                    'Batch': { path: '/MatchCodeBatch' },
                 }
 
                 if (!oValue) {
@@ -703,6 +710,8 @@ sap.ui.define([
                 let serialNumber = oSmtFilter.getFilterGroupItems().find(item => item.getName() === "SerialNumber")?.getControl();
                 let referenceNumber = oSmtFilter.getFilterGroupItems().find(item => item.getName() === "ReferenceNumber")?.getControl();
                 let equipment = oSmtFilter.getFilterGroupItems().find(item => item.getName() === "Equipment")?.getControl();
+                let handlingUnit = oSmtFilter.getFilterGroupItems().find(item => item.getName() === "HandlingUnit")?.getControl();
+                let batch = oSmtFilter.getFilterGroupItems().find(item => item.getName() === "Batch")?.getControl();
 
                 // getting filters values
                 let dateFromValue = dateFrom.getValue();
@@ -721,6 +730,8 @@ sap.ui.define([
                 let serialNumberValues = serialNumber.getTokens().map(token => token.getKey());
                 let referenceNumberValues = referenceNumber.getTokens().map(token => token.getKey());
                 let equipmentValues = equipment.getTokens().map(token => token.getKey());
+                let handlingUnitValues = handlingUnit.getTokens().map(token => token.getKey());
+                let batchValues = batch.getTokens().map(token => token.getKey());
 
                 if (prodOrderValues.length > 0) {
                     this.setSmartFilters(mBindingParams, prodOrderValues, "ProductionOrder");
@@ -764,6 +775,14 @@ sap.ui.define([
 
                 if (equipmentValues.length > 0) {
                     this.setSmartFilters(mBindingParams, equipmentValues, "Equipment");
+                }
+
+                if (handlingUnitValues.length > 0) {
+                    this.setSmartFilters(mBindingParams, handlingUnitValues, "HandlingUnit");
+                }
+
+                if (batchValues.length > 0) {
+                    this.setSmartFilters(mBindingParams, batchValues, "Batch");
                 }
 
                 if (dateFromValue && dateToValue) {
@@ -1073,6 +1092,8 @@ sap.ui.define([
                         Zfree: freeVal.toFixed(3),
                         Zscrap: scrapVal.toFixed(3),
                         Zuser: oContext.getProperty("Zuser"),
+                        Huident: oContext.getProperty("HandlingUnit"),
+                        ChargEWM: oContext.getProperty("Batch"),
                         Reason: reasonVal,
                         CostCenter: costCenterVal
                     }
@@ -1116,18 +1137,43 @@ sap.ui.define([
 
                 if (errors.blocked > 0) {
                     sap.m.MessageBox.error(blockedErrMsg);
-                    return;
+                    return false;
                 }
                 if (errors.emptyValues > 0) {
                     sap.m.MessageBox.error(emptyValesErrMsg);
-                    return;
+                    return false;
                 }
 
-                if (errors.emptyFields > 0) return;
+                if (errors.emptyFields > 0) return false;
 
-                this.postScrapMovement(postScrapData, postFreeData);
+                // this.postScrapMovement(postScrapData, postFreeData);
+                return { postScrapData, postFreeData };
             },
 
+            openPrintLabels: async function (oEvent) {
+                const oResourceBundle = this.getView().getModel('i18n').getResourceBundle();
+                const transferData = this.checkTransferMovement();
+
+                if (!transferData) return;
+
+                if (!this._oPrintLabelsDialog) {
+                    this._oPrintLabelsDialog = await this.loadFragment({
+                        name: "zdomscrapmovements.view.fragments.PrintLabelsDialog"
+                    });
+                }
+                this._oPrintLabelsDialog.open();
+
+                const checkBoxBlocked = this.byId('cbBlockLabel');
+                const checkBoxScrap = this.byId('cbScrapLabel');
+                const checkBoxFree = this.byId('cbFreeLabel');
+
+                if (transferData.postFreeData.PostSet.length > 0 ? checkBoxFree.setSelected(true) : checkBoxFree.setSelected(false));
+                if (transferData.postScrapData.PostSet.length > 0 ? checkBoxScrap.setSelected(true) : checkBoxScrap.setSelected(false));
+            },
+
+            onPrintLabelsCancel: function () {
+                this._oPrintLabelsDialog.close();
+            },
             // SAP.UI.TABLE VARIANT
             // checkTransferMovement: function () {
             //     this.clearNotificationsPanel();
@@ -1243,7 +1289,96 @@ sap.ui.define([
             //     this.postScrapMovement(postScrapData, postFreeData);
             // },
 
+            onPrintLabelsConfirm: async function () {
+                const transferData = this.checkTransferMovement();
+                const checkBoxBlocked = this.byId('cbBlockLabel');
+                const checkBoxScrap = this.byId('cbScrapLabel');
+                const checkBoxFree = this.byId('cbFreeLabel');
 
+                const sUrl = `/sap/opu/odata/sap/ZDOM_SIPMECA_SRV_01/ZfmSaveDefectPrintCollection('0001')/$value`;
+                const printPromises = [];
+                
+                // Lógica para seleccionar que print se realizará.
+                if (checkBoxFree.getSelected()) {
+                    const postFreeData = transferData.postFreeData.PostSet[0];
+                    const slugData = {
+                        "IvWerks": postFreeData.Werks,
+                        "IvWorkCtr:": postFreeData.WorkCtr,
+                        "handlingunit": postFreeData.Huident,
+                        "print": "3"
+                    }
+
+                    printPromises.push(
+                        fetch(sUrl, {
+                            headers: {
+                                "Slug": JSON.stringify(slugData),
+                                "Accept": "application/pdf"
+                            }
+                        }).catch(oError => {
+                            console.log(oError);
+                            return null; // para que un fallo no rompa el Promise.all
+                        })
+                    );
+                }
+
+                if (checkBoxScrap.getSelected()) {
+                    const postScrapData = transferData.postScrapData.PostSet[0];
+                    const slugData = {
+                        "IvWerks": postScrapData.Werks,
+                        "IvWorkCtr:": postScrapData.WorkCtr,
+                        "handlingunit": postScrapData.Huident,
+                        "print": "2"
+                    }
+
+                    printPromises.push(
+                        fetch(sUrl, {
+                            headers: {
+                                "Slug": JSON.stringify(slugData),
+                                "Accept": "application/pdf"
+                            }
+                        }).catch(oError => {
+                            console.log(oError);
+                            return null;
+                        })
+                    );
+                }
+
+                if (checkBoxBlocked.getSelected()) {
+                    const blockedData = transferData.postFreeData.PostSet.length > 0 ? transferData.postFreeData.PostSet[0] : transferData.postScrapData.PostSet[0];
+
+                    const slugData = {
+                        "qnum": blockedData.Qmnum,
+                        "print": "1"
+                    }
+
+                    printPromises.push(
+                        fetch(sUrl, {
+                            headers: {
+                                "Slug": JSON.stringify(slugData),
+                                "Accept": "application/pdf"
+                            }
+                        }).catch(oError => {
+                            console.log(oError);
+                            return null;
+                        })
+                    );
+                }
+
+
+                if (printPromises.length > 0) {
+                    const responses = await Promise.all(printPromises);
+                    const allOk = responses.every(response => response && response.ok);
+
+                    if (allOk) {
+                        sap.m.MessageToast.show("Printed successfully");
+                    } else {
+                        sap.m.MessageToast.show("Ocurrió un error al imprimir alguna etiqueta");
+                    }
+                }
+
+                this.postScrapMovement(transferData.postScrapData, transferData.postFreeData);
+                this._oPrintLabelsDialog.close();
+            },
             postScrapMovement: function (postScrapData, postFreeData) {
                 const that = this;
                 const oResourceBundle = this.getView().getModel("i18n").getResourceBundle();
@@ -1327,7 +1462,10 @@ sap.ui.define([
                             return;
                         }).catch((oError) => {
                             busyDialog4.close();
-                            console.log(oError);
+                            sap.m.MessageBox.error(oError.response.statusText);
+                            // console.log(oError);
+                        }).finally(() => {
+                            busyDialog4.close();
                         })
                     }
                 }, 100);

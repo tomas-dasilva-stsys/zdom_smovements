@@ -32,6 +32,8 @@ sap.ui.define([
                     "Zuser": "",
                     "Equipment": "",
                     "ReferenceNumber": "",
+                    "HandlingUnit": "",
+                    "Batch": ""
                 },
                 "Plant": [{
                     "label": "{i18n>plant}",
@@ -122,6 +124,18 @@ sap.ui.define([
                     {
                         "label": "{i18n>dniEquipment}",
                         "template": "DNIEquipment"
+                    },
+                ],
+                "HandlingUnit": [
+                    {
+                        "label": "{i18n>handlingUnit}",
+                        "template": "HandlingUnit"
+                    },
+                ],
+                "Batch": [
+                    {
+                        "label": "{i18n>batch}",
+                        "template": "Batch"
                     },
                 ],
                 "Material": [

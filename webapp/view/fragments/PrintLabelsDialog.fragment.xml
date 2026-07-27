@@ -1,0 +1,42 @@
+<core:FragmentDefinition
+    xmlns="sap.m"
+    xmlns:core="sap.ui.core"
+>
+    <Dialog
+        id="printLabelsDialog"
+        title="{i18n>printLabelTitle}"
+        contentWidth="20rem"
+        draggable="true"
+    >
+        <content>
+            <VBox class="sapUiSmallMargin">
+                <CheckBox
+                    id="cbBlockLabel"
+                    text="{i18n>checkboxBlock}"
+                />
+                <CheckBox
+                    id="cbScrapLabel"
+                    text="{i18n>checkboxScrap}"
+                />
+                <CheckBox
+                    id="cbFreeLabel"
+                    text="{i18n>checkboxFree}"
+                />
+            </VBox>
+        </content>
+
+        <beginButton>
+            <Button
+                text="{i18n>cancel}"
+                press=".onPrintLabelsCancel"
+            />
+        </beginButton>
+        <endButton>
+            <Button
+                text="{i18n>ok}"
+                type="Emphasized"
+                press=".onPrintLabelsConfirm"
+            />
+        </endButton>
+    </Dialog>
+</core:FragmentDefinition>
