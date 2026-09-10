@@ -198,8 +198,9 @@ sap.ui.define([
                     "ValueState": "None",
                     "guardar": ""
                 },
-                "Visible": {
+                "visible": {
                     "ReferenceNumberVisible": false,
+                    "DeleteButton": "",
                 }
                 // "EditFragment": {
                 //     "visibleAufnr": true,

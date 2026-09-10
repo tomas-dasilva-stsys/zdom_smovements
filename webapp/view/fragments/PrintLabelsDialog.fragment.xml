@@ -25,18 +25,27 @@
             </VBox>
         </content>
 
-        <beginButton>
-            <Button
-                text="{i18n>cancel}"
-                press=".onPrintLabelsCancel"
-            />
-        </beginButton>
-        <endButton>
-            <Button
-                text="{i18n>ok}"
-                type="Emphasized"
-                press=".onPrintLabelsConfirm"
-            />
-        </endButton>
+        <footer>
+            <OverflowToolbar>
+                <Button
+                    text="{i18n>saveDefault}"
+                    icon="sap-icon://save"
+                    type="Emphasized"
+                    press=".onSaveDefault"
+                />
+                <ToolbarSpacer />
+                
+                <Button
+                    text="{i18n>cancel}"
+                    press=".onPrintLabelsCancel"
+                />
+
+                <Button
+                    text="{i18n>ok}"
+                    type="Emphasized"
+                    press=".onPrintLabelsConfirm"
+                />
+            </OverflowToolbar>
+        </footer>
     </Dialog>
 </core:FragmentDefinition>

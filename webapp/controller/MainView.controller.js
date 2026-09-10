@@ -9,6 +9,7 @@ sap.ui.define([
     "zdomscrapmovements/model/AppJsonModel",
     "zdomscrapmovements/services/TransferService",
     "zdomscrapmovements/services/MatchcodesService",
+    "zdomscrapmovements/services/MatchcodesServiceV4",
     "sap/m/MessageBox",
     "zdomscrapmovements/model/Formatter",
     "sap/ui/export/Spreadsheet",
@@ -25,6 +26,7 @@ sap.ui.define([
         AppJsonModel,
         TransferService,
         MatchcodesService,
+        MatchcodesServiceV4,
         MessageBox,
         Formatter,
         Spreadsheet,
@@ -92,28 +94,45 @@ sap.ui.define([
                 if (userInfo) {
                     this.setUserPlant(userInfo);
                 }
+
+                this.enabledDeleteButton();
             },
 
             getUserInfo: async function () {
                 try {
                     const response = await fetch("/sap/bc/ui2/start_up");
                     const data = await response.json();
-                    if (data?.id) {
-                        // Test example
-                        // const oData = await MatchcodesService.callGetService('/GetPlant', [new Filter('uname', FilterOperator.EQ, 'IROSS')]);
 
-                        const oData = await MatchcodesService.callGetService('/GetPlant', [new Filter('uname', FilterOperator.EQ, data.id)]);
+                    return data?.id ? data.id : '';
+                    // if (data?.id) {
+                    //     // Test example
+                    //     // const oData = await MatchcodesService.callGetService('/GetPlant', [new Filter('uname', FilterOperator.EQ, 'IROSS')]);
 
-                        if (oData.results.length > 0) {
-                            const filteredData = oData.results.filter(item => item.Plant !== "' '")
-                            return filteredData;
-                        }
-                    }
+                    //     const oData = await MatchcodesService.callGetService('/GetPlant', [new Filter('uname', FilterOperator.EQ, data.id)]);
+
+                    //     if (oData.results.length > 0) {
+                    //         const filteredData = oData.results.filter(item => item.Plant !== "' '")
+                    //         return filteredData;
+                    //     }
+                    // }
 
                     return false;
                 } catch (e) {
                     console.warn("start_up falló:", e);
                 }
+            },
+
+            enabledDeleteButton: async function () {
+                const deleteButton = this.byId("discardLines");
+                try {
+                    const response = await MatchcodesService.callGetService("/DeleteAuthorization", []);
+                    const isBtnEnabled = response.results[0].IsScrapButtonEnabled;
+
+                    return isBtnEnabled ? deleteButton.setVisible(true) : deleteButton.setVisible(false);
+                } catch (oError) {
+                    console.log(oError);
+                }
+
             },
 
             setUserPlant: function (userInfo) {
@@ -535,10 +554,18 @@ sap.ui.define([
                 // stockMovementBtn.setEnabled(bHasSelection);
                 // massFillBtn.setEnabled(bHasSelection);
 
-                let selectedItems = oEvent.getSource().getSelectedItems();
-                let stockMovementBtn = this.getView().byId('stockTransferBtn');
-                let massFillBtn = this.byId("MassFillFields");
-                let scrapToFreeBtn = this.byId("scrapToFreeBtn");
+                const selectedItems = oEvent.getSource().getSelectedItems();
+                const stockMovementBtn = this.getView().byId('stockTransferBtn');
+                const massFillBtn = this.byId("MassFillFields");
+                const scrapToFreeBtn = this.byId("scrapToFreeBtn");
+                const deleteBtn = this.byId("discardLines");
+                const deleteBtnEnabled = deleteBtn.getVisible();
+
+                if (deleteBtnEnabled && selectedItems.length > 0) {
+                    deleteBtn.setEnabled(true);
+                } else if (deleteBtnEnabled && selectedItems.length === 0) {
+                    deleteBtn.setEnabled(false);
+                }
 
                 if (selectedItems.length > 0) {
                     stockMovementBtn.setEnabled(true);
@@ -1153,6 +1180,7 @@ sap.ui.define([
             openPrintLabels: async function (oEvent) {
                 const oResourceBundle = this.getView().getModel('i18n').getResourceBundle();
                 const transferData = this.checkTransferMovement();
+                const user = await this.getUserInfo();
 
                 if (!transferData) return;
 
@@ -1167,12 +1195,48 @@ sap.ui.define([
                 const checkBoxScrap = this.byId('cbScrapLabel');
                 const checkBoxFree = this.byId('cbFreeLabel');
 
-                if (transferData.postFreeData.PostSet.length > 0 ? checkBoxFree.setSelected(true) : checkBoxFree.setSelected(false));
-                if (transferData.postScrapData.PostSet.length > 0 ? checkBoxScrap.setSelected(true) : checkBoxScrap.setSelected(false));
+                TransferService.callGetService(`/PrintParametersSet('${user}')`, [])
+                    .then(oData => {
+                        const { Block, Scrap, Free } = oData;
+                        checkBoxBlocked.setSelected(Block);
+                        checkBoxScrap.setSelected(Scrap);
+                        checkBoxFree.setSelected(Free);
+                    })
             },
 
             onPrintLabelsCancel: function () {
                 this._oPrintLabelsDialog.close();
+            },
+
+            onSaveDefault: async function () {
+                const printLabelDialog = this.byId('printLabelsDialog');
+                printLabelDialog.setBusy(true);
+
+                const oResourceBundle = this.getView().getModel('i18n').getResourceBundle();
+                const checkBoxBlocked = this.byId('cbBlockLabel');
+                const checkBoxScrap = this.byId('cbScrapLabel');
+                const checkBoxFree = this.byId('cbFreeLabel');
+                const user = await this.getUserInfo();
+                const oModel = TransferService.getOdataModel();
+
+
+                const updateChecks = {
+                    Bname: user,
+                    Block: checkBoxBlocked.getSelected(),
+                    Scrap: checkBoxScrap.getSelected(),
+                    Free: checkBoxFree.getSelected()
+                }
+
+                oModel.update(`/PrintParametersSet('${user}')`, updateChecks, {
+                    success: (oData => {
+                        sap.m.MessageToast.show(oResourceBundle.getText('defaultSavedMsg'));
+                        printLabelDialog.setBusy(false);
+                    }),
+                    error: (oError => {
+                        sap.m.MessageToast.show(oResourceBundle.getText('defaultSaveErrMsg'));
+                        printLabelDialog.setBusy(false);
+                    })
+                })
             },
             // SAP.UI.TABLE VARIANT
             // checkTransferMovement: function () {
@@ -1290,21 +1354,28 @@ sap.ui.define([
             // },
 
             onPrintLabelsConfirm: async function () {
+                const printLabelsDialog = this.byId('printLabelsDialog');
+                printLabelsDialog.setBusy(true);
+
+                const oResourceBundle = this.getView().getModel("i18n").getResourceBundle();
                 const transferData = this.checkTransferMovement();
                 const checkBoxBlocked = this.byId('cbBlockLabel');
                 const checkBoxScrap = this.byId('cbScrapLabel');
                 const checkBoxFree = this.byId('cbFreeLabel');
 
+                await this.postScrapMovement(transferData.postScrapData, transferData.postFreeData);
+
                 const sUrl = `/sap/opu/odata/sap/ZDOM_SIPMECA_SRV_01/ZfmSaveDefectPrintCollection('0001')/$value`;
                 const printPromises = [];
-                
+                const printData = transferData.postFreeData.PostSet.length > 0 ? transferData.postFreeData.PostSet[0] : transferData.postScrapData.PostSet[0];
+
                 // Lógica para seleccionar que print se realizará.
                 if (checkBoxFree.getSelected()) {
-                    const postFreeData = transferData.postFreeData.PostSet[0];
                     const slugData = {
-                        "IvWerks": postFreeData.Werks,
-                        "IvWorkCtr:": postFreeData.WorkCtr,
-                        "handlingunit": postFreeData.Huident,
+                        "IvWerks": printData.Werks,
+                        "IvWorkCtr": printData.WorkCtr,
+                        "handlingunit": printData.Huident,
+                        "qmnum": printData.Qmnum,
                         "print": "3"
                     }
 
@@ -1322,11 +1393,8 @@ sap.ui.define([
                 }
 
                 if (checkBoxScrap.getSelected()) {
-                    const postScrapData = transferData.postScrapData.PostSet[0];
                     const slugData = {
-                        "IvWerks": postScrapData.Werks,
-                        "IvWorkCtr:": postScrapData.WorkCtr,
-                        "handlingunit": postScrapData.Huident,
+                        "qmnum": printData.Qmnum,
                         "print": "2"
                     }
 
@@ -1344,10 +1412,8 @@ sap.ui.define([
                 }
 
                 if (checkBoxBlocked.getSelected()) {
-                    const blockedData = transferData.postFreeData.PostSet.length > 0 ? transferData.postFreeData.PostSet[0] : transferData.postScrapData.PostSet[0];
-
                     const slugData = {
-                        "qnum": blockedData.Qmnum,
+                        "qmnum": printData.Qmnum,
                         "print": "1"
                     }
 
@@ -1364,22 +1430,21 @@ sap.ui.define([
                     );
                 }
 
-
                 if (printPromises.length > 0) {
                     const responses = await Promise.all(printPromises);
                     const allOk = responses.every(response => response && response.ok);
 
                     if (allOk) {
-                        sap.m.MessageToast.show("Printed successfully");
+                        sap.m.MessageToast.show(oResourceBundle.getText("printedSuccessfully"));
                     } else {
-                        sap.m.MessageToast.show("Ocurrió un error al imprimir alguna etiqueta");
+                        sap.m.MessageToast.show(oResourceBundel.getText("printError"));
                     }
                 }
 
-                this.postScrapMovement(transferData.postScrapData, transferData.postFreeData);
-                this._oPrintLabelsDialog.close();
+                printLabelsDialog.setBusy(false);
+                printLabelsDialog.close();
             },
-            postScrapMovement: function (postScrapData, postFreeData) {
+            postScrapMovement: async function (postScrapData, postFreeData) {
                 const that = this;
                 const oResourceBundle = this.getView().getModel("i18n").getResourceBundle();
                 const busyDialogTitle = oResourceBundle.getText("busyDialogTitle");
@@ -1393,10 +1458,11 @@ sap.ui.define([
 
                 busyDialog4.open();
 
-                setTimeout(() => {
-                    let sPath = '/ZfmPostScrapSet';
+                return new Promise((resolve, reject) => {
+                    let tasks = [];
+
                     if (postScrapData.PostSet.length > 0) {
-                        TransferService.callPostService(sPath, postScrapData).then(data => {
+                        const scrapTask = TransferService.callPostService('/ZfmPostScrapSet', postScrapData).then(data => {
                             oMessagePopover.getModel().setData('');
                             let resMessages = data.ReturnSet.results.map(msgs => msgs);
                             let w_data = [];
@@ -1423,16 +1489,15 @@ sap.ui.define([
                             stockTransfer = true;
                             // that.handleCloseDialog();
                             oSmartTable.rebindTable();
-                            busyDialog4.close();
                         }).catch((oError) => {
-                            busyDialog4.close();
                             console.log(oError);
                         })
+
+                        tasks.push(scrapTask);
                     }
 
                     if (postFreeData.PostSet.length > 0) {
-                        sPath = '/ZfmPostFreeSet';
-                        TransferService.callPostService(sPath, postFreeData).then(data => {
+                        const freeTask = TransferService.callPostService('/ZfmPostFreeSet', postFreeData).then(data => {
                             let resMessages = data.ReturnSet.results.map(msgs => msgs);
                             let w_data = [];
 
@@ -1458,17 +1523,22 @@ sap.ui.define([
                             stockTransfer = true;
                             // that.handleCloseDialog();
                             oSmartTable.rebindTable();
-                            busyDialog4.close();
-                            return;
+                            postFreeData.PostSet[0].Huident = data.PostSet.results[0].Huident;
                         }).catch((oError) => {
-                            busyDialog4.close();
                             sap.m.MessageBox.error(oError.response.statusText);
                             // console.log(oError);
                         }).finally(() => {
                             busyDialog4.close();
                         })
+
+                        tasks.push(freeTask);
                     }
-                }, 100);
+
+                    Promise.all(tasks)
+                        .then(() => resolve())
+                        .catch((err) => reject(err))
+                        .finally(() => busyDialog4.close());
+                });
             },
 
             onValueHelpMassFillDialog: function (oEvent) {
@@ -3111,7 +3181,73 @@ sap.ui.define([
             },
 
             onDiscardLinesButtonPress: function (oEvent) {
+                const oTable = this.byId("table");
+                const aSelectedItems = oTable.getSelectedItems();
+                const oResourceBundle = this.getView().getModel("i18n").getResourceBundle();
 
+                if (aSelectedItems.length === 0) {
+                    sap.m.MessageToast.show("No hay líneas seleccionadas para descartar.");
+                    return;
+                }
+
+                sap.m.MessageBox.confirm(oResourceBundle.getText("confirmDelete"), {
+                    title: oResourceBundle.getText("discardLinesTitle"),
+                    actions: [sap.m.MessageBox.Action.YES, sap.m.MessageBox.Action.NO],
+                    onClose: (oAction) => {
+                        if (oAction === sap.m.MessageBox.Action.YES) {
+                            // Lógica para descartar las líneas seleccionadas
+                            let dataToDelete = { RequestId: "", items: [] };
+
+                            aSelectedItems.forEach(item => {
+                                let oContext = item.getBindingContext();
+                                let blockedVal = parseFloat(oContext.getProperty("BlockedQuantity"));
+                                let scrapVal = parseFloat(item.getCells().filter(cell => cell.sId.includes('scrapQty'))[0].getValue());
+                                let freeVal = parseFloat(item.getCells().filter(cell => cell.sId.includes('freeQty'))[0].getValue());
+                                // let reasonVal = item.getCells().filter(cell => cell.sId.includes('Reason'))[0].getValue();
+                                // let costCenterVal = item.getCells().filter(cell => cell.sId.includes('CostCenter'))[0].getValue();
+                                // let amountToTransfer = scrapVal + freeVal;
+
+                                let data = {
+                                    Aufnr: oContext.getProperty("ProductionOrder"),
+                                    Sortf: oContext.getProperty("ProductionOperation"),
+                                    Matnr: oContext.getProperty("Material"),
+                                    Sernr: oContext.getProperty("SerialNumber"),
+                                    Idnrk: oContext.getProperty("Component"),
+                                    Charg: oContext.getProperty("Charg"),
+                                    WorkCtr: oContext.getProperty("WorkCenter"),
+                                    Werks: oContext.getProperty("Plant"),
+                                    Lgort: oContext.getProperty("StorageLocation"),
+                                    Qmnum: oContext.getProperty("NotificationNumber"),
+                                    ItemNumber: oContext.getProperty("ItemNumber"),
+                                    Qmart: oContext.getProperty("NotificationType"),
+                                    Rsnum: oContext.getProperty("ReserveNumber"),
+                                    Stlnr: oContext.getProperty("BomNumber"),
+                                    Menge: oContext.getProperty("Quantity"),
+                                    Zblocked: oContext.getProperty("BlockedQuantity"),
+                                    Zfree: freeVal.toFixed(3),
+                                    Zscrap: scrapVal.toFixed(3),
+                                    Datuv: oContext.getProperty("DateFrom").toISOString(),
+                                    Time: oContext.getProperty("Time").ms,
+                                    Zuser: oContext.getProperty("Zuser"),
+                                    UnitOfMeasure: oContext.getProperty("UnitOfMeasure"),
+                                    Refnum: oContext.getProperty("ReferenceNumber"),
+                                    ChargEWM: oContext.getProperty("Batch"),
+                                    Huident: oContext.getProperty("HandlingUnit"),
+                                }
+
+                                dataToDelete.items.push(data);
+                            })
+
+                            // Llamada al servicio para descartar las líneas
+                            MatchcodesServiceV4.postData("/PostMovement", dataToDelete)
+                                .then(oData => {
+                                    console.log(oData);
+                                }).catch(oError => {
+                                    console.log(oError);
+                                })
+                        }
+                    }
+                });
             },
 
             // onSmartTableExportPress: async function () {

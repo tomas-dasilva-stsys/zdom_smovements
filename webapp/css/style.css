@@ -1,12 +1,12 @@
 /* Enter your custom styles here */
-.alwaysScrollX {
+/* .alwaysScrollX {
   overflow-x: scroll !important;
-  height: 300px; /* O la altura que tú quieras */
+  height: 300px;
   width: 100%;
   position: relative;
-}
+} */
 
-.myFlexBoxClass {
+/* .myFlexBoxClass {
   position: relative;
   width: 100%;
 
@@ -19,4 +19,14 @@
   position: fixed;
   width: 100%;
   top: 0;
+} */
+
+/* .zHorizontalScrollTable .sapMListTblCnt {
+    overflow-x: auto !important; 
 }
+
+.zHorizontalScrollTable table.sapMListTbl {
+    table-layout: auto;
+    width: auto;
+    min-width: 100%;
+} */
