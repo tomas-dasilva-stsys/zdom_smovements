@@ -9,12 +9,9 @@ sap.ui.define([
     "zdomscrapmovements/model/AppJsonModel",
     "zdomscrapmovements/services/TransferService",
     "zdomscrapmovements/services/MatchcodesService",
-    "zdomscrapmovements/services/MatchcodesServiceV4",
+    "zdomscrapmovements/services/PostmovementServiceV4",
     "sap/m/MessageBox",
     "zdomscrapmovements/model/Formatter",
-    "sap/ui/export/Spreadsheet",
-    "sap/m/Dialog",
-    "sap/ui/core/syncStyleClass",
 ],
     function (Controller,
         JSONModel,
@@ -26,12 +23,9 @@ sap.ui.define([
         AppJsonModel,
         TransferService,
         MatchcodesService,
-        MatchcodesServiceV4,
+        PostmovementServiceV4,
         MessageBox,
         Formatter,
-        Spreadsheet,
-        Dialog,
-        syncStyleClass
     ) {
         "use strict";
         let inputId;
@@ -3181,69 +3175,112 @@ sap.ui.define([
             },
 
             onDiscardLinesButtonPress: function (oEvent) {
+                const that = this;
                 const oTable = this.byId("table");
+                const oSmartTable = this.byId("smartTable");
+                const notificationPanel = this.getView().byId('messagePopoverBtn');
                 const aSelectedItems = oTable.getSelectedItems();
                 const oResourceBundle = this.getView().getModel("i18n").getResourceBundle();
+                const busyDialogTitle = oResourceBundle.getText("busyDialogTitle");
+                const busyDialog4 = (sap.ui.getCore().byId("busy4")) ? sap.ui.getCore().byId("busy4") : new sap.m.BusyDialog('busy4', {
+                    title: busyDialogTitle
+                });
 
                 if (aSelectedItems.length === 0) {
-                    sap.m.MessageToast.show("No hay líneas seleccionadas para descartar.");
+                    sap.m.MessageToast.show(oResourceBundle.getText("noLines"));
                     return;
                 }
 
-                sap.m.MessageBox.confirm(oResourceBundle.getText("confirmDelete"), {
+                function msToTimeOfDay(ms) {
+                    const totalSeconds = Math.floor(ms / 1000);
+                    const hours = Math.floor(totalSeconds / 3600);
+                    const minutes = Math.floor((totalSeconds % 3600) / 60);
+                    const seconds = totalSeconds % 60;
+
+                    const pad = (n) => String(n).padStart(2, "0");
+
+                    return pad(hours) + ":" + pad(minutes) + ":" + pad(seconds);
+                }
+
+                MessageBox.confirm(oResourceBundle.getText("confirmDelete"), {
                     title: oResourceBundle.getText("discardLinesTitle"),
-                    actions: [sap.m.MessageBox.Action.YES, sap.m.MessageBox.Action.NO],
+                    actions: [MessageBox.Action.YES, MessageBox.Action.NO],
                     onClose: (oAction) => {
-                        if (oAction === sap.m.MessageBox.Action.YES) {
+                        if (oAction === MessageBox.Action.YES) {
                             // Lógica para descartar las líneas seleccionadas
-                            let dataToDelete = { RequestId: "", items: [] };
+                            busyDialog4.open();
+                            let dataToDelete = { RequestId: "", _Items: [] };
 
                             aSelectedItems.forEach(item => {
                                 let oContext = item.getBindingContext();
                                 let blockedVal = parseFloat(oContext.getProperty("BlockedQuantity"));
                                 let scrapVal = parseFloat(item.getCells().filter(cell => cell.sId.includes('scrapQty'))[0].getValue());
                                 let freeVal = parseFloat(item.getCells().filter(cell => cell.sId.includes('freeQty'))[0].getValue());
-                                // let reasonVal = item.getCells().filter(cell => cell.sId.includes('Reason'))[0].getValue();
-                                // let costCenterVal = item.getCells().filter(cell => cell.sId.includes('CostCenter'))[0].getValue();
+                                let reasonVal = item.getCells().filter(cell => cell.sId.includes('Reason'))[0].getValue();
+                                let costCenterVal = item.getCells().filter(cell => cell.sId.includes('CostCenter'))[0].getValue();
                                 // let amountToTransfer = scrapVal + freeVal;
 
                                 let data = {
-                                    Aufnr: oContext.getProperty("ProductionOrder"),
-                                    Sortf: oContext.getProperty("ProductionOperation"),
-                                    Matnr: oContext.getProperty("Material"),
-                                    Sernr: oContext.getProperty("SerialNumber"),
-                                    Idnrk: oContext.getProperty("Component"),
-                                    Charg: oContext.getProperty("Charg"),
-                                    WorkCtr: oContext.getProperty("WorkCenter"),
-                                    Werks: oContext.getProperty("Plant"),
-                                    Lgort: oContext.getProperty("StorageLocation"),
-                                    Qmnum: oContext.getProperty("NotificationNumber"),
-                                    ItemNumber: oContext.getProperty("ItemNumber"),
-                                    Qmart: oContext.getProperty("NotificationType"),
-                                    Rsnum: oContext.getProperty("ReserveNumber"),
-                                    Stlnr: oContext.getProperty("BomNumber"),
-                                    Menge: oContext.getProperty("Quantity"),
-                                    Zblocked: oContext.getProperty("BlockedQuantity"),
-                                    Zfree: freeVal.toFixed(3),
-                                    Zscrap: scrapVal.toFixed(3),
-                                    Datuv: oContext.getProperty("DateFrom").toISOString(),
-                                    Time: oContext.getProperty("Time").ms,
-                                    Zuser: oContext.getProperty("Zuser"),
-                                    UnitOfMeasure: oContext.getProperty("UnitOfMeasure"),
-                                    Refnum: oContext.getProperty("ReferenceNumber"),
-                                    ChargEWM: oContext.getProperty("Batch"),
-                                    Huident: oContext.getProperty("HandlingUnit"),
+                                    aufnr: oContext.getProperty("ProductionOrder"),
+                                    sortf: oContext.getProperty("ProductionOperation"),
+                                    matnr: oContext.getProperty("Material"),
+                                    sernr: oContext.getProperty("SerialNumber"),
+                                    idnrk: oContext.getProperty("Component"),
+                                    charg: oContext.getProperty("Charg"),
+                                    work_ctr: oContext.getProperty("WorkCenter"),
+                                    werks: oContext.getProperty("Plant"),
+                                    lgort: oContext.getProperty("StorageLocation"),
+                                    qmnum: oContext.getProperty("NotificationNumber"),
+                                    item_number: oContext.getProperty("ItemNumber"),
+                                    qmart: oContext.getProperty("NotificationType"),
+                                    rsnum: oContext.getProperty("ReserveNumber"),
+                                    stlnr: oContext.getProperty("BomNumber"),
+                                    menge: oContext.getProperty("Quantity"),
+                                    zblocked: oContext.getProperty("BlockedQuantity"),
+                                    zfree: freeVal.toFixed(3),
+                                    zscrap: scrapVal.toFixed(3),
+                                    datuv: oContext.getProperty("DateFrom").toISOString().split("T")[0],
+                                    time: msToTimeOfDay(oContext.getProperty("Time").ms),
+                                    zuser: oContext.getProperty("Zuser"),
+                                    unit_of_measure: oContext.getProperty("UnitOfMeasure"),
+                                    refnum: oContext.getProperty("ReferenceNumber"),
+                                    charg_ewm: oContext.getProperty("Batch"),
+                                    huident: oContext.getProperty("HandlingUnit"),
+                                    reason: reasonVal,
+                                    cost_center: costCenterVal,
                                 }
 
-                                dataToDelete.items.push(data);
+                                dataToDelete._Items.push(data);
                             })
 
                             // Llamada al servicio para descartar las líneas
-                            MatchcodesServiceV4.postData("/PostMovement", dataToDelete)
-                                .then(oData => {
-                                    console.log(oData);
+                            PostmovementServiceV4.postData("PostMovement", dataToDelete)
+                                .then(oResult => {
+                                    let resMessages = oResult.messages;
+                                    let w_data = [];
+
+                                    resMessages.forEach(msg => {
+                                        w_data.push({
+                                            type: msg.getType(),
+                                            title: msg.getMessage(),
+                                        })
+                                    })
+
+                                    let prevMsgs = Array.from(oMessagePopover.getModel().getData());
+                                    let upDatedMsgs = [...prevMsgs, ...w_data];
+                                    oMessagePopover.getModel().setData(upDatedMsgs);
+                                    oMessagePopover.getModel().refresh(true);
+                                    that.getView().getModel('popoverModel').getData().messageLength = upDatedMsgs.length;
+                                    that.getView().getModel('popoverModel').getData().type = "Emphasized";
+                                    that.getView().getModel('popoverModel').refresh(true);
+
+                                    notificationPanel.setEnabled(true);
+                                    busyDialog4.close();
+                                    // that.handleCloseDialog();
+                                    oSmartTable.rebindTable();
                                 }).catch(oError => {
                                     console.log(oError);
+                                    busyDialog4.close();
                                 })
                         }
                     }
@@ -3426,12 +3463,12 @@ sap.ui.define([
                     sap.ui.core.BusyIndicator.show(0);
 
                     // =====================================================
-                    // 1️⃣ FORZAR CARGA COMPLETA DEL BINDING
+                    // FORZAR CARGA COMPLETA DEL BINDING
                     // =====================================================
                     await loadAllContexts(oBinding);
 
                     // =====================================================
-                    // 2️⃣ OBTENER TODOS LOS CONTEXTS (YA CARGADOS)
+                    // OBTENER TODOS LOS CONTEXTS (YA CARGADOS)
                     // =====================================================
                     const iLength = oBinding.getLength();
                     const aContexts = oBinding.getContexts(0, iLength).filter(Boolean);
@@ -3439,7 +3476,7 @@ sap.ui.define([
                     const aExportDataRaw = aContexts.map(ctx => ctx.getObject());
 
                     // =====================================================
-                    // 3️⃣ APLICAR FORMATTERS / TRANSFORMACIONES
+                    // APLICAR FORMATTERS / TRANSFORMACIONES
                     // =====================================================
                     // const aExportData = aExportDataRaw.map(oObj => ({
                     //     ...oObj,
@@ -3453,12 +3490,12 @@ sap.ui.define([
 
                         // const { ProductionOrder, ProductionOperation, Material, ReserveNumber, SerialNumber, Component, Charg, WorkCenter, Plant, StorageLocation, NotificationNumber, ItemNumber } = oObj
 
-                        // 1️⃣ construir path lógico estable
+                        // construir path lógico estable
                         const sKeyPath = oModel.createKey(sEntityPath, { ...oObj });
 
                         const sFullPath = `${sKeyPath}`;
 
-                        // 2️⃣ aplicar overrides si existen
+                        // aplicar overrides si existen
                         const oOverrides = this._mMassChanges[sFullPath] || {};
 
                         const oMerged = {
@@ -3466,7 +3503,7 @@ sap.ui.define([
                             ...oOverrides
                         };
 
-                        // 3️⃣ aplicar formatters
+                        // aplicar formatters
                         return {
                             ...oMerged,
                             NotificationCreationDate: parseToDate(oMerged.NotificationCreationDate),
@@ -3476,12 +3513,12 @@ sap.ui.define([
                     });
 
                     // =====================================================
-                    // 4️⃣ COLUMNAS SEGÚN TABLA
+                    // COLUMNAS SEGÚN TABLA
                     // =====================================================
                     const aColumns = this.getColumnsFromTable(oInnerTable);
 
                     // =====================================================
-                    // 5️⃣ EXPORT
+                    // EXPORT
                     // =====================================================
                     const oExportSettings = {
                         workbook: { columns: aColumns },
@@ -3572,6 +3609,5 @@ sap.ui.define([
                     ].map(v => String(v).padStart(2, "0")).join(":");
                 }
             }
-
         });
     });
