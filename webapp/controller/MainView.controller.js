@@ -3279,7 +3279,8 @@ sap.ui.define([
                                     // that.handleCloseDialog();
                                     oSmartTable.rebindTable();
                                 }).catch(oError => {
-                                    console.log(oError);
+                                    const errMsg = JSON.parse(JSON.stringify(oError)).error.message
+                                    MessageBox.error(errMsg);
                                     busyDialog4.close();
                                 })
                         }
