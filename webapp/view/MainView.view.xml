@@ -463,7 +463,7 @@
                 growing="true"
                 width="6000px"
                 growingScrollToLoad="true"
-                growingThreshold="1500"
+                growingThreshold="50"
             >
                 <columns>
                     <Column width="100px">
