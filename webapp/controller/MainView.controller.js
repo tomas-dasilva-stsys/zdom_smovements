@@ -12,6 +12,8 @@ sap.ui.define([
     "zdomscrapmovements/services/PostmovementServiceV4",
     "sap/m/MessageBox",
     "zdomscrapmovements/model/Formatter",
+    "sap/ui/export/Spreadsheet",
+    "sap/ui/export/library"
 ],
     function (Controller,
         JSONModel,
@@ -26,6 +28,8 @@ sap.ui.define([
         PostmovementServiceV4,
         MessageBox,
         Formatter,
+        Spreadsheet,
+        exportLibrary
     ) {
         "use strict";
         let inputId;
@@ -552,6 +556,7 @@ sap.ui.define([
                 const stockMovementBtn = this.getView().byId('stockTransferBtn');
                 const massFillBtn = this.byId("MassFillFields");
                 const scrapToFreeBtn = this.byId("scrapToFreeBtn");
+                const ucDetailBtn = this.byId("ucDetailBtn");
                 const deleteBtn = this.byId("discardLines");
                 const deleteBtnEnabled = deleteBtn.getVisible();
 
@@ -565,11 +570,13 @@ sap.ui.define([
                     stockMovementBtn.setEnabled(true);
                     massFillBtn.setEnabled(true);
                     scrapToFreeBtn.setEnabled(true);
+                    ucDetailBtn.setEnabled(true);
 
                 } else {
                     stockMovementBtn.setEnabled(false)
                     massFillBtn.setEnabled(false)
                     scrapToFreeBtn.setEnabled(false);
+                    ucDetailBtn.setEnabled(false);
                 }
             },
 
@@ -872,14 +879,16 @@ sap.ui.define([
                     })
 
                     // removing selections from table
-                    oTable.removeSelections(true);
-                    this.byId('MassFillFields').setEnabled(false);
-                    this.byId('stockTransferBtn').setEnabled(false);
-                    this.byId('scrapToFreeBtn').setEnabled(false);
-                    return;
+                    // oTable.removeSelections(true);
+
+                    // return;
                 }
 
                 oTable.removeSelections(true);
+                this.byId('MassFillFields').setEnabled(false);
+                this.byId('stockTransferBtn').setEnabled(false);
+                this.byId('scrapToFreeBtn').setEnabled(false);
+                this.byId('ucDetailBtn').setEnabled(false);
             },
 
             clearTableInputs: function (tableItems) {
@@ -1537,8 +1546,7 @@ sap.ui.define([
 
             onValueHelpMassFillDialog: function (oEvent) {
                 let currId = oEvent.getSource().getId();
-                let match = currId.match(/--([a-zA-Z]+)--([a-zA-Z]+)/);
-                inputId = match[2];
+                inputId = currId.split('-').pop();
 
                 this.getFragment('MassFillFieldsHelpDialog').then(oFragment => {
                     oFragment.open();
@@ -2166,8 +2174,7 @@ sap.ui.define([
 
             onValueHelpRequest: function (oEvent) {
                 let currId = oEvent.getSource().getId();
-                let match = currId.match(/--([a-zA-Z]+)--([a-zA-Z]+)/);
-                inputId = match[2];
+                inputId = currId.split('-').pop();
                 currRowPosition = oEvent.getSource().getId().split('').pop();
 
                 let currSpath = this.getMatchCodePath(inputId);
@@ -2905,6 +2912,22 @@ sap.ui.define([
                 // oEvent.getSource().setValue(parseValue.toFixed(3));
             },
 
+            onUcDetailButtonPress: function (oEvent) {
+                const oTable = this.byId('table');
+                const aSelectedContexts = oTable.getSelectedContexts();
+                const aSelectedData = aSelectedContexts.map(ctx => ctx.getObject());
+
+                if (aSelectedData.length === 0) {
+                    MessageBox.warning("Por favor, seleccione al menos un registro para ver los detalles.");
+                    return;
+                }
+
+                // Pasar los datos seleccionados al controlador de detalle
+                const oDetailModel = new JSONModel({ selectedData: aSelectedData });
+                this.getOwnerComponent().setModel(oDetailModel, "ucDetailModel");
+                this.getOwnerComponent().getRouter().navTo("ucDetail");
+            },
+
             handleOpenDialog: function () {
                 this._openDialog("Dialog");
             },
@@ -3145,22 +3168,22 @@ sap.ui.define([
 
                     // === Números: 3 primeras columnas + Quantity ===
                     if (["BlockedQuantity", "ScrapQuantity", "FreeQuantity", "Quantity"].includes(sProperty)) {
-                        oColDef.type = sap.ui.export.EdmType.Number;
+                        oColDef.type = exportLibrary.EdmType.Number;
                         oColDef.scale = 3; // mostrar 3 decimales fijos (puedes cambiarlo a 2)
                         oColDef.delimiter = true; // separador de miles
                     }
 
                     // === Fechas ===
                     if (["DateFrom", "DateTo", "NotificationCreationDate"].includes(sProperty)) {
-                        oColDef.type = sap.ui.export.EdmType.Date;
+                        oColDef.type = exportLibrary.EdmType.Date;
                     }
 
                     // === Horas ===
                     if (["Time", "NotificationCreationTime"].includes(sProperty)) {
-                        oColDef.type = sap.ui.export.EdmType.Time;
+                        oColDef.type = exportLibrary.EdmType.Time;
                     }
-
-                    aColumns.push(oColDef);
+                    -
+                        aColumns.push(oColDef);
                 });
 
                 return aColumns;
@@ -3168,10 +3191,10 @@ sap.ui.define([
 
             // === Tipado básico según nombre del campo ===
             deduceColumnType: function (prop) {
-                if (/date/i.test(prop)) return sap.ui.export.EdmType.Date;
-                if (/time/i.test(prop)) return sap.ui.export.EdmType.String;
-                if (/qty|quantity|amount|number|value/i.test(prop)) return sap.ui.export.EdmType.Number;
-                return sap.ui.export.EdmType.String;
+                if (/date/i.test(prop)) return exportLibrary.EdmType.Date;
+                if (/time/i.test(prop)) return exportLibrary.EdmType.String;
+                if (/qty|quantity|amount|number|value/i.test(prop)) return exportLibrary.EdmType.Number;
+                return exportLibrary.EdmType.String;
             },
 
             onDiscardLinesButtonPress: function (oEvent) {
@@ -3527,7 +3550,7 @@ sap.ui.define([
                         fileName: "Export_ScrapMovements.xlsx"
                     };
 
-                    const oSheet = new sap.ui.export.Spreadsheet(oExportSettings);
+                    const oSheet = new Spreadsheet(oExportSettings);
                     await oSheet.build();
                     oSheet.destroy();
 

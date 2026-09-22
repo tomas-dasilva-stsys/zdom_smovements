@@ -54,6 +54,7 @@
         "sap.ui.comp": {},
         "sap.ui.generic.app": {},
         "sap.ui.table": {},
+        "sap.ui.fl": {},
         "sap.ushell": {}
       }
     },
@@ -92,27 +93,35 @@
         "routerClass": "sap.m.routing.Router",
         "viewType": "XML",
         "async": true,
-        "viewPath": "zdomscrapmovements.view",
+        "path": "zdomscrapmovements.view",
+        "type": "View",
+        "transition": "slide",
         "controlAggregation": "pages",
         "controlId": "app",
         "clearControlAggregation": false
       },
       "routes": [
         {
-          "name": "RouteMainView",
-          "pattern": ":?query:",
-          "target": [
-            "TargetMainView"
-          ]
+          "pattern": "",
+          "name": "main",
+          "target": "main"
+        },
+        {
+          "pattern": "ucDetail",
+          "name": "ucDetail",
+          "target": "ucDetail"
         }
       ],
       "targets": {
-        "TargetMainView": {
-          "viewType": "XML",
-          "transition": "slide",
-          "clearControlAggregation": false,
+        "main": {
+          "viewName": "MainView",
           "viewId": "MainView",
-          "viewName": "MainView"
+          "viewLevel": 1
+        },
+        "ucDetail": {
+          "viewName": "UcDetail",
+          "viewId": "UcDetail",
+          "viewLevel": 2
         }
       }
     },

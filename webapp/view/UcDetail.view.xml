@@ -1,0 +1,296 @@
+<mvc:View
+    controllerName="zdomscrapmovements.controller.UcDetail"
+    xmlns:mvc="sap.ui.core.mvc"
+    xmlns:core="sap.ui.core"
+    xmlns:fl="sap.ui.fl"
+    xmlns="sap.m"
+    displayBlock="true"
+    height="100%"
+    busyIndicatorDelay="0"
+>
+    <Page
+        title="UC Detail"
+        showNavButton="true"
+        navButtonPress="onNavBack"
+    >
+        <ScrollContainer
+            height="100%"
+            width="100%"
+            vertical="true"
+        >
+            <Table
+                id="table"
+                fl:flexibility="sap/m/flexibility/EngineFlex"
+                class="zHorizontalScrollTable"
+                mode="MultiSelect"
+                items="{ucDetailModel>/selectedData}"
+                selectionChange="onSelectionChange"
+                growing="true"
+                growingScrollToLoad="true"
+                growingThreshold="50"
+            >
+                <headerToolbar>
+                    <Toolbar id="_IDGenToolbarDetail">
+                        <ToolbarSpacer />
+                        <Button
+                            id="scrapToFreeBtn"
+                            type="Accept"
+                            icon="sap-icon://initiative"
+                            enabled="false"
+                            tooltip="{i18n>scrapToFree}"
+                            text="{i18n>scrapToFree}"
+                            press="onScrapToFreeButtonPress"
+                        />
+                        <Button
+                            id="MassFillFields"
+                            type="Transparent"
+                            icon="sap-icon://add-process"
+                            press="onValueHelpMassFillDialog"
+                            enabled="false"
+                            tooltip="{i18n>massFill}"
+                            text="{i18n>massFillText}"
+                        />
+
+                        <Button
+                            press=".onSmartTableExportPress"
+                            icon="sap-icon://excel-attachment"
+                        />
+
+                        <Button
+                            id="tableSettingsBtn"
+                            icon="sap-icon://action-settings"
+                            tooltip="{i18n>tableSettings}"
+                            press="onP13nButtonPress"
+                        />
+                    </Toolbar>
+                </headerToolbar>
+
+                <columns>
+                    <Column width="100px">
+                        <customData>
+                            <core:CustomData
+                                key="p13nKey"
+                                value="blockedQty"
+                            />
+                        </customData>
+                        <Text text="{i18n>blockedQuantity}" />
+                    </Column>
+
+                    <Column width="100px">
+                        <customData>
+                            <core:CustomData
+                                key="p13nKey"
+                                value="scrapQty"
+                            />
+                        </customData>
+                        <Text text="{i18n>scrapQuantity}" />
+                    </Column>
+
+                    <Column width="100px">
+                        <customData>
+                            <core:CustomData
+                                key="p13nKey"
+                                value="freeQty"
+                            />
+                        </customData>
+                        <Text text="{i18n>freeQuantity}" />
+                    </Column>
+
+                    <Column width="150px">
+                        <customData>
+                            <core:CustomData
+                                key="p13nKey"
+                                value="reason"
+                            />
+                        </customData>
+                        <Text text="{i18n>reason}" />
+                    </Column>
+
+                    <Column width="150px">
+                        <customData>
+                            <core:CustomData
+                                key="p13nKey"
+                                value="costCenter"
+                            />
+                        </customData>
+                        <Text text="{i18n>costCenter}" />
+                    </Column>
+
+                    <Column width="100px">
+                        <customData>
+                            <core:CustomData
+                                key="p13nKey"
+                                value="dateFrom"
+                            />
+                        </customData>
+                        <Text text="{i18n>dateFrom}" />
+                    </Column>
+
+                    <Column width="100px">
+                        <customData>
+                            <core:CustomData
+                                key="p13nKey"
+                                value="time"
+                            />
+                        </customData>
+                        <Text text="{i18n>time}" />
+                    </Column>
+                </columns>
+
+                <items>
+                    <ColumnListItem>
+                        <cells>
+                            <Text
+                                id="blockedQty"
+                                text="{ucDetailModel>BlockedQuantity}"
+                            >
+                                <customData>
+                                    <core:CustomData
+                                        key="p13nKey"
+                                        value="blockedQty"
+                                    />
+                                </customData>
+                            </Text>
+                        </cells>
+
+                        <cells>
+                            <Input
+                                id="scrapQty"
+                                value="{ucDetailModel>ScrapQuantity}"
+                                type="Number"
+                                change="onFormatValue"
+                                maxLength="5"
+                            >
+                                <customData>
+                                    <core:CustomData
+                                        key="p13nKey"
+                                        value="scrapQty"
+                                    />
+                                </customData>
+                            </Input>
+                        </cells>
+
+                        <cells>
+                            <Input
+                                id="freeQty"
+                                value="{ucDetailModel>FreeQuantity}"
+                                type="Number"
+                                change="onFormatValue"
+                                maxLength="5"
+                            >
+                                <customData>
+                                    <core:CustomData
+                                        key="p13nKey"
+                                        value="freeQty"
+                                    />
+                                </customData>
+                            </Input>
+                        </cells>
+
+                        <cells>
+                            <Input
+                                id="Reason"
+                                type="Number"
+                                showValueHelp="true"
+                                valueHelpRequest="onValueHelpRequestInputsTable"
+                                valueStateText="{i18n>reasonRequired}"
+                                change="onInputChange"
+                                maxLength="4"
+                                value="{ucDetailModel>Reason}"
+                            >
+                                <customData>
+                                    <core:CustomData
+                                        key="p13nKey"
+                                        value="reason"
+                                    />
+                                </customData>
+                            </Input>
+                        </cells>
+
+                        <cells>
+                            <Input
+                                id="CostCenter"
+                                showValueHelp="true"
+                                valueHelpRequest="onValueHelpRequestInputsTable"
+                                valueStateText="{i18n>costCenterRequired}"
+                                change="onInputChange"
+                                value="{ucDetailModel>CostCenter}"
+                            >
+                                <customData>
+                                    <core:CustomData
+                                        key="p13nKey"
+                                        value="costCenter"
+                                    />
+                                </customData>
+                            </Input>
+                        </cells>
+
+                        <cells>
+                            <Text
+                                text="{path: 'ucDetailModel>DateFrom', formatter: '.formatter.formatDateByLocale'}"
+                            >
+                                <customData>
+                                    <core:CustomData
+                                        key="p13nKey"
+                                        value="dateFrom"
+                                    />
+                                </customData>
+                            </Text>
+                        </cells>
+
+                        <cells>
+                            <Text
+                                text="{path: 'ucDetailModel>Time', formatter: '.formatter.formatEdmTimeByLocale'}"
+                            >
+                                <customData>
+                                    <core:CustomData
+                                        key="p13nKey"
+                                        value="time"
+                                    />
+                                </customData>
+                            </Text>
+                        </cells>
+                    </ColumnListItem>
+                </items>
+            </Table>
+        </ScrollContainer>
+
+        <footer>
+            <OverflowToolbar>
+                <Button
+                    id="messagePopoverBtn"
+                    icon="sap-icon://notification-2"
+                    text="{popoverModel>/messageLength}"
+                    type="{popoverModel>/type}"
+                    press=".handleMessagePopoverPress"
+                    ariaHasPopup="Dialog"
+                    enabled="false"
+                />
+                <ToolbarSpacer />
+                <Button
+                    id="stockTransferBtn"
+                    class="sapUiSmallMarginBeginEnd"
+                    text="{i18n>stockTransferBtn}"
+                    enabled="false"
+                    press="openPrintLabels"
+                    type="Emphasized"
+                >
+                    <customData>
+                        <core:CustomData
+                            key="multi"
+                            value="true"
+                        />
+                        <core:CustomData
+                            key="remember"
+                            value="true"
+                        />
+                        <core:CustomData
+                            key="draggable"
+                            value="true"
+                        />
+                    </customData>
+                </Button>
+            </OverflowToolbar>
+        </footer>
+    </Page>
+</mvc:View>

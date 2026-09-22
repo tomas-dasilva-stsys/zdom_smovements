@@ -1,14 +1,14 @@
 sap.ui.define(
-    [
-        "sap/ui/core/mvc/Controller"
-    ],
-    function(BaseController) {
-      "use strict";
-  
-      return BaseController.extend("zdomscrapmovements.controller.App", {
-        onInit: function() {
-        }
-      });
-    }
-  );
-  
+  [
+    "sap/ui/core/mvc/Controller"
+  ],
+  function (BaseController) {
+    "use strict";
+
+    return BaseController.extend("zdomscrapmovements.controller.App", {
+      onInit: function () {
+        this.getOwnerComponent().getRouter().initialize();
+      }
+    });
+  }
+);

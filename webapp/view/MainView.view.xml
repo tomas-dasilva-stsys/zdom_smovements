@@ -421,6 +421,14 @@
                 <Toolbar id="_IDGenToolbar">
                     <ToolbarSpacer id="_IDGenToolbarSpacer" />
                     <Button
+                        id="ucDetailBtn"
+                        type="Emphasized"
+                        enabled="false"
+                        text="UC Detail"
+                        icon="sap-icon://detail-view"
+                        press="onUcDetailButtonPress"
+                    />
+                    <Button
                         id="discardLines"
                         type="Reject"
                         enabled="false"
