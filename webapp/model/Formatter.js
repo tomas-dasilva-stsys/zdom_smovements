@@ -98,6 +98,10 @@ sap.ui.define([], function () {
             let ss = seconds.toString().padStart(2, "0");
 
             return `${hh}:${mm}:${ss}`;
+        },
+
+        cleanCeros: function (sValue) {
+            return sValue ? sValue.replace(/^0+/, "") : "";
         }
     };
 });

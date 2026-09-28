@@ -14,18 +14,18 @@ sap.ui.define([
     "zdomscrapmovements/services/TransferService"
 ], function (
     Controller,
-	Filter,
-	FilterOperator,
-	MessagePopover,
-	MessageItem,
-	MessageBox,
-	MessageToast,
-	Spreadsheet,
-	library,
+    Filter,
+    FilterOperator,
+    MessagePopover,
+    MessageItem,
+    MessageBox,
+    MessageToast,
+    Spreadsheet,
+    library,
     JSONModel,
-	AppJsonModel,
-	MatchcodesService,
-	TransferService
+    AppJsonModel,
+    MatchcodesService,
+    TransferService
 ) {
     "use strict";
 
@@ -62,6 +62,7 @@ sap.ui.define([
 
             this.oFragments = this.oFragments || {};
             this._mDialogs = this._mDialogs || {};
+            this._mMassChanges = {};
 
             const popModel = new sap.ui.model.json.JSONModel({});
             oMessagePopover.setModel(popModel);
@@ -163,6 +164,10 @@ sap.ui.define([
         },
 
         checkCostCenterPath: async function (oInput) {
+            if (!oInput.getBindingContext()) {
+                return { path: "/MatchCodeCostCenter", filters: [] };
+            }
+
             const currWorkcenter = oInput.getBindingContext().getObject().WorkCenter;
             const currentPlant = oInput.getBindingContext().getObject().Plant;
             const currInputValue = oInput.getValue();
@@ -178,6 +183,7 @@ sap.ui.define([
                 if (!currInputValue.trim()) {
                     return { path: "/MatchCodeCostCenter", filters: [] };
                 }
+
                 return { path: "/MatchCodeCostCenter", filters: [new Filter("CostCenter", FilterOperator.EQ, currInputValue)] };
             });
         },
@@ -300,13 +306,16 @@ sap.ui.define([
             this._inputId = currId || "";
 
             const oTable = this.byId("table");
-            const oRow = oInput.getParent();
-            this._currRowPosition = oTable.getItems().indexOf(oRow);
+            const oRowContext = this._getRowContext(oTable, oInput);
 
-            if (this._currRowPosition === -1) {
+            if (!oRowContext) {
                 console.warn("No se pudo determinar la fila para el Value Help.");
                 return;
             }
+
+            this._currRowPosition = oRowContext.index;
+            this._currRowPath = oRowContext.path;
+            this._currModelName = oRowContext.modelName;
 
             if (this._inputId === "CostCenter") {
                 const sPath = await this.checkCostCenterPath(oInput);
@@ -362,47 +371,159 @@ sap.ui.define([
             }
         },
 
+        _getRowContext: function (oTable, oInput) {
+            const sAggregationName = oTable.isA("sap.ui.table.Table") ? "rows" : "items";
+            const oBindingInfo = oTable.getBindingInfo(sAggregationName);
+            const sModelName = oBindingInfo && oBindingInfo.model;
+
+            const oContext = oInput.getBindingContext(sModelName);
+            if (!oContext) {
+                return null;
+            }
+
+            const sPath = oContext.getPath();
+            const iIndex = parseInt(sPath.substring(sPath.lastIndexOf("/") + 1), 10);
+
+            return {
+                index: isNaN(iIndex) ? -1 : iIndex,
+                path: sPath,
+                modelName: sModelName
+            };
+        },
+
+        _getRowPosition: function (oTable, oInput) {
+            if (oTable.isA("sap.ui.table.Table")) {
+                const oBindingInfo = oTable.getBindingInfo("rows");
+                const sModelName = oBindingInfo && oBindingInfo.model;
+                const oContext = oInput.getBindingContext(sModelName);
+
+                if (!oContext) {
+                    return -1;
+                }
+
+                const sPath = oContext.getPath();
+                const iIndex = parseInt(sPath.substring(sPath.lastIndexOf("/") + 1), 10);
+                return isNaN(iIndex) ? -1 : iIndex;
+            }
+
+            // sap.m.Table (incluye el que está atrás del SmartTable)
+            const oRow = oInput.getParent(); // ColumnListItem
+            return oTable.getItems().indexOf(oRow);
+        },
+
         onValueHelpOkPress: function (oEvent) {
             const oTable = this.byId("table");
+            const oModel = this.getView().getModel(this._currModelName);
+            const sRowPath = this._currRowPath;
             let currValue;
 
             if (this._inputId === "CostCenter") {
-                const rowSelected = oTable.getItems()[this._currRowPosition];
-                const oCtx = rowSelected.getBindingContext();
-                const oModel = oCtx.getModel();
-                const sRowPath = oCtx.getPath();
-
                 const oTokenData = oEvent.getParameter("tokens")[0].getCustomData()[0].getValue();
                 currValue = oTokenData.costcenter || oTokenData.CostCenter;
 
                 oModel.setProperty(`${sRowPath}/${this._inputId}`, currValue);
 
-                const oInput = rowSelected.getCells().find(c => c.getId().includes(this._inputId));
+                const oInput = this._findLiveInput(oTable, sRowPath, this._inputId);
                 if (oInput) oInput.setValueState("None");
 
                 this.onExitDialog();
                 return;
             }
 
-            const rowSelected = oTable.getItems()[this._currRowPosition];
             const tokensSelected = oEvent.getParameter("tokens").map(token => ({ key: token.getKey(), text: token.getText() }));
             if (tokensSelected.length) currValue = tokensSelected[0].key;
 
-            const oCtx = rowSelected.getBindingContext();
-            if (!oCtx) {
+            if (this._inputId === "Reason") {
+                const oInput = this._findLiveInput(oTable, sRowPath, "Reason");
+                if (oInput) {
+                    oInput.setValue(tokensSelected[0].text);
+                    oInput.setValueState("None");
+                } else {
+                    // Fallback: si por algún motivo no se encontró el control visible, igual actualizamos el modelo
+                    oModel.setProperty(`${sRowPath}/${this._inputId}`, currValue);
+                }
                 this.onExitDialog();
                 return;
             }
 
-            const oModel = oCtx.getModel();
-            const sRowPath = oCtx.getPath();
             oModel.setProperty(`${sRowPath}/${this._inputId}`, currValue);
 
-            const oInput = rowSelected.getCells().find(c => c.getId().includes(this._inputId));
+            const oInput = this._findLiveInput(oTable, sRowPath, this._inputId);
             if (oInput) oInput.setValueState("None");
 
             this.onExitDialog();
         },
+
+        /**
+         * Busca el control Input actualmente renderizado para una fila y un p13nKey/id parcial dados.
+         * Devuelve null si la fila no está visible en este momento (no debería pasar en el flujo normal,
+         * ya que el usuario recién interactuó con esa fila para abrir el diálogo).
+         */
+        _findLiveInput: function (oTable, sRowPath, sInputId) {
+            if (oTable.isA("sap.ui.table.Table")) {
+                const oRow = oTable.getRows().find(oR => {
+                    const oCtx = oR.getBindingContext(this._currModelName);
+                    return oCtx && oCtx.getPath() === sRowPath;
+                });
+                if (!oRow) return null;
+
+                return oRow.getCells().find(c => c.getId().includes(sInputId)) || null;
+            }
+
+            // sap.m.Table
+            const oItem = oTable.getItems().find(oI => {
+                const oCtx = oI.getBindingContext(this._currModelName);
+                return oCtx && oCtx.getPath() === sRowPath;
+            });
+            if (!oItem) return null;
+
+            return oItem.getCells().find(c => c.getId().includes(sInputId)) || null;
+        },
+
+        // onValueHelpOkPress: function (oEvent) {
+        //     const oTable = this.byId("table");
+        //     let currValue;
+
+        //     if (this._inputId === "CostCenter") {
+        //         const rowSelected = oTable.getItems()[this._currRowPosition];
+        //         const oCtx = rowSelected.getBindingContext();
+        //         const oModel = oCtx.getModel();
+        //         const sRowPath = oCtx.getPath();
+
+        //         const oTokenData = oEvent.getParameter("tokens")[0].getCustomData()[0].getValue();
+        //         currValue = oTokenData.costcenter || oTokenData.CostCenter;
+
+        //         oModel.setProperty(`${sRowPath}/${this._inputId}`, currValue);
+
+        //         const oInput = rowSelected.getCells().find(c => c.getId().includes(this._inputId));
+        //         if (oInput) oInput.setValueState("None");
+
+        //         this.onExitDialog();
+        //         return;
+        //     }
+
+        //     const rowSelected = oTable.getItems()[this._currRowPosition];
+        //     const tokensSelected = oEvent.getParameter("tokens").map(token => ({ key: token.getKey(), text: token.getText() }));
+        //     if (tokensSelected.length) currValue = tokensSelected[0].key;
+
+        //     const oCtx = rowSelected.getBindingContext();
+
+        //     if (!oCtx && this._inputId === "Reason") {
+        //         const currReasonInput = rowSelected.getCells().find(c => c.getId().includes("Reason"));
+        //         currReasonInput.setValue(tokensSelected[0].text);
+        //         this.onExitDialog();
+        //         return;
+        //     }
+
+        //     const oModel = oCtx.getModel();
+        //     const sRowPath = oCtx.getPath();
+        //     oModel.setProperty(`${sRowPath}/${this._inputId}`, currValue);
+
+        //     const oInput = rowSelected.getCells().find(c => c.getId().includes(this._inputId));
+        //     if (oInput) oInput.setValueState("None");
+
+        //     this.onExitDialog();
+        // },
 
         // ==================================================================
         // INPUTS DE LA TABLA (Scrap/Free/Reason/CostCenter)
@@ -502,8 +623,9 @@ sap.ui.define([
         // ==================================================================
 
         onSelectionChange: function (oEvent) {
-            const selectedItems = oEvent.getSource().getSelectedItems();
-            const bHasSelection = selectedItems.length > 0;
+            const oSourceTable = oEvent.getSource();
+            const iSelectedCount = this._getSelectedCount(oSourceTable);
+            const bHasSelection = iSelectedCount > 0;
 
             const deleteBtn = this.byId("discardLines");
             if (deleteBtn && deleteBtn.getVisible()) {
@@ -516,20 +638,63 @@ sap.ui.define([
             this.byId("ucDetailBtn")?.setEnabled(bHasSelection);
         },
 
+        _getSelectedCount: function (oTable) {
+            if (oTable.isA("sap.ui.table.Table")) {
+                return oTable.getSelectedIndices().length;
+            }
+
+            // sap.m.Table
+            return oTable.getSelectedItems().length;
+        },
+
         onScrapToFreeButtonPress: function () {
             const scrapToFreeBtn = this.byId("scrapToFreeBtn");
             const oTable = this.byId("table");
-            const selectedItems = oTable.getSelectedItems();
 
-            selectedItems.forEach(row => {
-                const cells = row.getCells();
-                const blockedValue = cells.find(cell => cell.getId().includes("blockedQty"))?.getText();
+            const aRowPaths = this._getSelectedRowPaths(oTable);
+            const sModelName = this._getTableModelName(oTable);
+            const oModel = this.getView().getModel(sModelName);
 
-                cells.find(cell => cell.getId().includes("freeQty"))?.setValue(blockedValue);
-                cells.find(cell => cell.getId().includes("scrapQty"))?.setValue(parseInt("0", 10).toFixed(3));
+            aRowPaths.forEach(sRowPath => {
+                const fBlockedValue = oModel.getProperty(`${sRowPath}/BlockedStock`);
+
+                oModel.setProperty(`${sRowPath}/FreeQuantity`, fBlockedValue);
+                oModel.setProperty(`${sRowPath}/ScrapQuantity`, 0);
             });
 
             if (scrapToFreeBtn) scrapToFreeBtn.setEnabled(false);
+        },
+
+        /**
+         * Devuelve el nombre del modelo bindeado en la aggregation de filas, sea sap.m.Table o sap.ui.table.Table.
+         */
+        _getTableModelName: function (oTable) {
+            const sAggregationName = oTable.isA("sap.ui.table.Table") ? "rows" : "items";
+            const oBindingInfo = oTable.getBindingInfo(sAggregationName);
+            return oBindingInfo && oBindingInfo.model;
+        },
+
+        /**
+         * Devuelve los paths absolutos (ej: "/selectedData/3") de las filas actualmente seleccionadas,
+         * sea sap.m.Table o sap.ui.table.Table. No depende de que las filas estén renderizadas.
+         */
+        _getSelectedRowPaths: function (oTable) {
+            const sModelName = this._getTableModelName(oTable);
+
+            if (oTable.isA("sap.ui.table.Table")) {
+                const oBindingInfo = oTable.getBindingInfo("rows");
+                const sBasePath = oBindingInfo.path; // ej: "/selectedData"
+
+                return oTable.getSelectedIndices().map(iIndex => `${sBasePath}/${iIndex}`);
+            }
+
+            // sap.m.Table
+            return oTable.getSelectedItems()
+                .map(oItem => {
+                    const oCtx = oItem.getBindingContext(sModelName);
+                    return oCtx ? oCtx.getPath() : null;
+                })
+                .filter(Boolean);
         },
 
         // ==================================================================
@@ -855,6 +1020,385 @@ sap.ui.define([
             this._lastTransferData = null;
             printLabelsDialog.setBusy(false);
             printLabelsDialog.close();
+        },
+
+        onValueHelpMassFillDialog: function (oEvent) {
+            let currId = oEvent.getSource().getId();
+            this._inputId = currId.split('-').pop();
+
+            this.getFragment('MassFillFieldsHelpDialog').then(oFragment => {
+                oFragment.open();
+            })
+        },
+
+        onValueHelpMassFillRequest: async function (oEvent) {
+            let currId = oEvent.getSource().getId();
+            this._inputId = currId.split('-').pop();
+
+            let oInput = oEvent.getSource();
+            const oTable = this.byId('table');
+
+            if (this._inputId === 'CostCenter') {
+                const aSelectedData = this._getSelectedData(oTable);
+
+                let uniqueWorkcenters = new Set(aSelectedData.map(oData => oData.WorkCenter));
+                let workcentersArray = Array.from(uniqueWorkcenters);
+                let aFilters = [];
+
+                const uniqueRecords = Array.from(
+                    new Map(
+                        aSelectedData.map(oData => [
+                            `${oData.Plant}-${oData.WorkCenter}`, // clave única compuesta
+                            oData
+                        ])
+                    ).values()
+                );
+
+                uniqueRecords.forEach(oData => {
+                    let combinedFilters = new Filter({
+                        filters: [
+                            new Filter('workcenter', FilterOperator.EQ, oData.WorkCenter),
+                            new Filter('plant', FilterOperator.EQ, oData.Plant)
+                        ],
+                        and: true
+                    });
+
+                    aFilters.push(combinedFilters);
+                });
+
+                let oFinalFilter = new Filter({
+                    filters: aFilters,
+                    and: false
+                });
+
+                const matchcodeResult = await MatchcodesService.callGetService('/MatchCodePlant', [oFinalFilter]).then(data => {
+                    const resultWc = data.results.map(item => item.workcenter);
+                    const allWcExist = workcentersArray.every(wc => resultWc.includes(wc));
+
+                    if (allWcExist) {
+                        if (data.results.length === 1) {
+                            oInput.setValue(data.results[0].costcenter);
+                            return 'noMatchCode';
+                        }
+
+                        if (data.results.length > 1) {
+                            if (allWcExist) {
+                                return { path: '/MatchCodePlant', filters: [oFinalFilter], cols: 'CostCenter' };
+                            } else {
+                                return { path: '/MatchCodeCostCenter', filters: [], cols: 'CostCenterOld' };
+                            }
+                        }
+                    }
+
+                    return { path: '/MatchCodeCostCenter', filters: [], cols: 'CostCenterOld' };
+                });
+
+                if (matchcodeResult === 'noMatchCode') return;
+
+                this.getFragment(`MassFillCostCenterHelpDialog`).then(oFragment => {
+                    oFragment.getTableAsync().then(function (oTable) {
+                        oTable.setModel(MatchcodesService.getOdataModel());
+                        let tableCols = AppJsonModel.getProperty(`/${matchcodeResult.cols}`);
+                        let currentJsonModel = new JSONModel({
+                            "cols": tableCols
+                        });
+
+                        oTable.setModel(currentJsonModel, "columns");
+
+                        if (oTable.bindRows) {
+                            oTable.bindAggregation("rows", {
+                                path: matchcodeResult.path,
+                                filters: matchcodeResult.filters,
+                                showHeader: false
+                            });
+                        }
+
+                        oFragment.update();
+                    });
+                    oFragment.open();
+                });
+            }
+
+            if (this._inputId === 'Reason') {
+                let oFilters = this.getCurrentFilter(this._inputId);
+                let currSpath = this.getMatchCodePath(this._inputId);
+                this.getFragment(`MassFill${this._inputId}HelpDialog`).then(oFragment => {
+                    oFragment.getTableAsync().then(function (oTable) {
+                        oTable.setModel(MatchcodesService.getOdataModel());
+                        let tableCols = AppJsonModel.getProperty(`/${this._inputId}`);
+                        let currentJsonModel = new JSONModel({
+                            "cols": tableCols
+                        });
+
+                        oTable.setModel(currentJsonModel, "columns");
+
+                        if (oTable.bindRows) {
+                            oTable.bindAggregation("rows", {
+                                path: currSpath.path,
+                                filters: oFilters,
+                                showHeader: false
+                            });
+                        }
+
+                        oFragment.update();
+                    }.bind(this));
+                    oFragment.open();
+                });
+            }
+        },
+
+        onValueHelpOkPressMassFill: function (oEvent) {
+            let reasonInput = this.byId("MassFill-Reason");
+            let costCenterInput = this.byId("MassFill-CostCenter");
+
+            let currValue;
+
+            if (this._inputId === 'CostCenter') {
+                if (!oEvent.getParameter("tokens")[0].getCustomData()[0].getValue().costcenter) {
+                    currValue = oEvent.getParameter("tokens")[0].getCustomData()[0].getValue().CostCenter
+                } else {
+                    currValue = currValue = oEvent.getParameter("tokens")[0].getCustomData()[0].getValue().costcenter;
+                }
+            }
+
+            if (this._inputId === 'Reason') {
+                currValue = oEvent.getParameter("tokens")[0].getKey()
+                reasonInput.setValue(currValue);
+                reasonInput.setValueState('None');
+                this.onExitMassFillDialog();
+                return;
+            }
+
+            if (this._inputId === 'CostCenter') {
+                costCenterInput.setValue(currValue);
+                costCenterInput.setValueState('None');
+                this.onExitMassFillDialog();
+                return;
+            }
+        },
+
+        onConfirmMassFillAction: async function (oEvent) {
+            const oTable = this.byId('table');
+            const oModel = oTable.getModel();
+            const oResourceBundle = this.getView().getModel("i18n").getResourceBundle();
+            const sReason = this.byId('MassFill-Reason').getValue().trim();
+            const sCostCenter = this.byId('MassFill-CostCenter').getValue().trim();
+            const aContexts = this._getSelectedContexts(oTable);
+
+            if (sReason === '' && sCostCenter === '') {
+                aContexts.forEach(oCtx => {
+                    oCtx.getModel().setProperty(`${oCtx.getPath()}/Reason`, '');
+                    oCtx.getModel().setProperty(`${oCtx.getPath()}/CostCenter`, '');
+                    this._setFieldState(oTable, oCtx, 'Reason', 'None', '');
+                    this._setFieldState(oTable, oCtx, 'CostCenter', 'None', '');
+                });
+                this.destroyFragments();
+                return;
+            }
+
+            const oBusyDialog = new sap.m.BusyDialog({ text: oResourceBundle.getText("busyDialogTitle") });
+            oBusyDialog.open();
+
+            try {
+                // Resetear estados
+                this.byId('MassFill-CostCenter').setValueState("None");
+                this.byId('MassFill-CostCenter').setValueStateText('');
+                this.byId('MassFill-Reason').setValueState("None");
+                this.byId('MassFill-Reason').setValueStateText('');
+
+                let reasonValid = true;
+
+                // Validar Reason UNA SOLA VEZ
+                if (sReason) {
+                    reasonValid = await this.checkReasonExists(sReason);
+                    if (!reasonValid) {
+                        this.byId('MassFill-Reason').setValueState("Error");
+                        this.byId('MassFill-Reason').setValueStateText(oResourceBundle.getText("invalidValueMsg", [sReason]));
+                    }
+                }
+
+                // OPTIMIZACIÓN: Validar solo combinaciones únicas de Plant + WorkCenter
+                const validationCache = new Map();
+
+                if (sCostCenter) {
+                    // primero chequear si el valor ingresado en el input existe globalmente
+                    const costCenterValidation = await MatchcodesService.callGetService('/MatchCodeCostCenter', [new Filter('CostCenter', FilterOperator.EQ, sCostCenter)]).then(data => {
+                        if (data.results.length > 0) {
+                            return { isValid: true };
+                        }
+
+                        return { isValid: false };
+                    })
+
+                    if (!costCenterValidation.isValid) {
+                        this.byId('MassFill-CostCenter').setValueState("Error");
+                        this.byId('MassFill-CostCenter').setValueStateText(oResourceBundle.getText("invalidValueMsg", [sCostCenter]));
+                        return;
+                    }
+
+                    // 1. Extraer combinaciones únicas de Plant-WorkCenter
+                    const uniqueCombinations = new Map();
+
+                    aContexts.forEach(oCtx => {
+                        const plant = oCtx.getProperty('Plant');
+                        const workCenter = oCtx.getProperty('WorkCenter');
+                        const key = `${plant}-${workCenter}`;
+
+                        if (!uniqueCombinations.has(key)) {
+                            // Celda "falsa" solo para reutilizar checkValueExists sin tocar la UI
+                            const tempCell = {
+                                getValue: () => sCostCenter,
+                                getBindingContext: () => oCtx
+                            };
+                            uniqueCombinations.set(key, { plant, workCenter, cell: tempCell });
+                        }
+                    });
+
+                    // 2. Validar solo las combinaciones únicas (en paralelo)
+                    const validationResults = await Promise.all(
+                        Array.from(uniqueCombinations.entries()).map(async ([key, combo]) => {
+                            const result = await this.checkValueExists('CostCenter', combo.cell);
+                            return { key, result };
+                        })
+                    );
+
+                    // 3. Guardar resultados en caché
+                    validationResults.forEach(({ key, result }) => {
+                        validationCache.set(key, result);
+                    });
+
+                    // 4. Verificar si hay algún error
+                    // const hasErrors = Array.from(validationCache.values()).some(result => !result.isValid);
+                    // if (hasErrors) {
+                    //     this.byId('MassFill-CostCenter').setValueState("Error");
+                    //     this.byId('MassFill-CostCenter').setValueStateText(
+                    //         oResourceBundle.getText("invalidValueMsg", [sCostCenter])
+                    //     );
+                    // }
+                }
+
+                if (!reasonValid || this.byId('MassFill-CostCenter').getValueState() === "Error") {
+                    return;
+                }
+
+                // 5. Aplicar cambios a TODAS las filas
+                aContexts.forEach(oCtx => {
+                    const oModel = oCtx.getModel();
+                    const sPath = oCtx.getPath();
+                    const key = `${oCtx.getProperty('Plant')}-${oCtx.getProperty('WorkCenter')}`;
+                    if (!oCtx) return;
+
+
+                    // Guardar en _mMassChanges
+                    this._mMassChanges[sPath] = {
+                        ...(this._mMassChanges[sPath] || {}),
+                        ...(sReason && { Reason: sReason }),
+                        ...(sCostCenter && { CostCenter: sCostCenter })
+                    };
+
+                    if (sReason) {
+                        oModel.setProperty(`${sPath}/Reason`, sReason);
+                        this._setFieldState(oTable, oCtx, 'Reason', 'None', '');
+                    }
+
+                    if (sCostCenter) {
+                        oModel.setProperty(`${sPath}/CostCenter`, sCostCenter);
+
+                        const validationResult = validationCache.get(key);
+                        if (validationResult && !validationResult.isValid) {
+                            this._setFieldState(oTable, oCtx, 'CostCenter', 'Error', oResourceBundle.getText("invalidValueMsg", [sCostCenter]));
+                        } else {
+                            this._setFieldState(oTable, oCtx, 'CostCenter', 'None', '');
+                        }
+                    }
+
+                    // Aplicar valores a TODAS las celdas de esta fila
+                    // item.getCells().forEach(c => {
+                    //     if (sReason && c.getId().includes("Reason")) {
+                    //         c.setValue(sReason);
+                    //         c.setValueState("None");
+                    //         c.setValueStateText('');
+                    //     }
+
+                    //     if (sCostCenter && c.getId().includes("CostCenter")) {
+                    //         // SIEMPRE setear el valor
+                    //         c.setValue(sCostCenter);
+
+                    //         // Aplicar estado según el caché de validación
+                    //         const validationResult = validationCache.get(key);
+
+                    //         if (validationResult && !validationResult.isValid) {
+                    //             c.setValueState("Error");
+                    //             c.setValueStateText(oResourceBundle.getText("invalidValueMsg", [sCostCenter]));
+                    //         } else {
+                    //             c.setValueState("None");
+                    //             c.setValueStateText('');
+                    //         }
+                    //     }
+                    // });
+                });
+
+                this.destroyFragments();
+
+            } catch (error) {
+                console.error("Error en mass fill:", error);
+                MessageBox.error(oResourceBundle.getText("errorMsg") || "Error al procesar");
+            } finally {
+                oBusyDialog.close();
+                oBusyDialog.destroy();
+            }
+        },
+
+        _setFieldState: function (oTable, oCtx, sField, sState, sText) {
+            if (oTable.isA("sap.ui.table.Table")) {
+                const oModel = oCtx.getModel();
+                const sPath = oCtx.getPath();
+                oModel.setProperty(`${sPath}/${sField}State`, sState);
+                oModel.setProperty(`${sPath}/${sField}StateText`, sText);
+                return;
+            }
+
+            const sModelName = this._getTableModelName(oTable);
+            const oItem = oTable.getItems().find(oI => {
+                const oItemCtx = oI.getBindingContext(sModelName);
+                return oItemCtx && oItemCtx.getPath() === oCtx.getPath();
+            });
+            const oCell = oItem && oItem.getCells().find(c => c.getId().includes(sField));
+            if (oCell) {
+                oCell.setValueState(sState);
+                oCell.setValueStateText(sText);
+            }
+        },
+
+        _getSelectedData: function (oTable) {
+            const sModelName = this._getTableModelName(oTable);
+
+            if (oTable.isA("sap.ui.table.Table")) {
+                return oTable.getSelectedIndices()
+                    .map(iIndex => oTable.getContextByIndex(iIndex))
+                    .filter(Boolean)
+                    .map(oCtx => oCtx.getObject());
+            }
+
+            // sap.m.Table
+            return oTable.getSelectedItems()
+                .map(oItem => oItem.getBindingContext(sModelName))
+                .filter(Boolean)
+                .map(oCtx => oCtx.getObject());
+        },
+
+        _getSelectedContexts: function (oTable) {
+            const sModelName = this._getTableModelName(oTable);
+
+            if (oTable.isA("sap.ui.table.Table")) {
+                return oTable.getSelectedIndices().map(iIndex => oTable.getContextByIndex(iIndex)).filter(Boolean)
+            }
+
+            // sap.m.Table
+            return oTable.getSelectedItems()
+                .map(oItem => oItem.getBindingContext(sModelName))
+                .filter(Boolean)
+                .map(oCtx => oCtx.getObject());
         },
 
         // ==================================================================

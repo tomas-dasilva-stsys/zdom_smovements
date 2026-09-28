@@ -2,7 +2,7 @@
     controllerName="zdomscrapmovements.controller.UcDetail"
     xmlns:mvc="sap.ui.core.mvc"
     xmlns:core="sap.ui.core"
-    xmlns:fl="sap.ui.fl"
+    xmlns:t="sap.ui.table"
     xmlns="sap.m"
     displayBlock="true"
     height="100%"
@@ -13,247 +13,272 @@
         showNavButton="true"
         navButtonPress="onNavBack"
     >
-        <ScrollContainer
-            height="100%"
-            width="100%"
-            vertical="true"
+        <t:Table
+            id="table"
+            rows="{ucDetailModel>/selectedData}"
+            rowSelectionChange="onSelectionChange"
+            class="zHorizontalScrollTable"
         >
-            <Table
-                id="table"
-                fl:flexibility="sap/m/flexibility/EngineFlex"
-                class="zHorizontalScrollTable"
-                mode="MultiSelect"
-                items="{ucDetailModel>/selectedData}"
-                selectionChange="onSelectionChange"
-                growing="true"
-                growingScrollToLoad="true"
-                growingThreshold="50"
-            >
-                <headerToolbar>
-                    <Toolbar id="_IDGenToolbarDetail">
-                        <ToolbarSpacer />
-                        <Button
-                            id="scrapToFreeBtn"
-                            type="Accept"
-                            icon="sap-icon://initiative"
-                            enabled="false"
-                            tooltip="{i18n>scrapToFree}"
-                            text="{i18n>scrapToFree}"
-                            press="onScrapToFreeButtonPress"
+            <t:extension>
+                <Toolbar id="_IDGenToolbarDetail">
+                    <Title text="UC Data">
+                        <content />
+                    </Title>
+                    <ToolbarSpacer />
+                    <Button
+                        id="scrapToFreeBtn"
+                        type="Accept"
+                        icon="sap-icon://initiative"
+                        enabled="false"
+                        tooltip="{i18n>scrapToFree}"
+                        text="{i18n>scrapToFree}"
+                        press="onScrapToFreeButtonPress"
+                    />
+                    <Button
+                        id="MassFillFields"
+                        type="Transparent"
+                        icon="sap-icon://add-process"
+                        press="onValueHelpMassFillDialog"
+                        enabled="false"
+                        tooltip="{i18n>massFill}"
+                        text="{i18n>massFillText}"
+                    />
+                    <Button
+                        press=".onExportExcel"
+                        icon="sap-icon://excel-attachment"
+                    />
+                </Toolbar>
+            </t:extension>
+
+            <t:columns>
+                <t:Column
+                    sortProperty="BlockedStock"
+                    filterProperty="BlockedStock"
+                    showSortMenuEntries="true"
+                    showFilterMenuEntries="true"
+                >
+                    <t:label>
+                        <Label text="{i18n>blockedQty}" />
+                    </t:label>
+                    <t:template>
+                        <Text
+                            id="blockedQty"
+                            text="{
+                                path: 'ucDetailModel>BlockedStock',
+                                type: 'sap.ui.model.type.Float',
+                                formatOptions: {
+                                    minFractionDigits: 3,
+                                    maxFractionDigits: 3,
+                                    groupingEnabled: true
+                                }
+                            }"
                         />
-                        <Button
-                            id="MassFillFields"
-                            type="Transparent"
-                            icon="sap-icon://add-process"
-                            press="onValueHelpMassFillDialog"
-                            enabled="false"
-                            tooltip="{i18n>massFill}"
-                            text="{i18n>massFillText}"
+                    </t:template>
+                </t:Column>
+
+                <t:Column
+                    sortProperty="ScrapQuantity"
+                    filterProperty="ScrapQuantity"
+                    showSortMenuEntries="true"
+                    showFilterMenuEntries="true"
+                >
+                    <t:label>
+                        <Label text="{i18n>scrapQty}" />
+                    </t:label>
+                    <t:template>
+                        <Input
+                            id="scrapQty"
+                            value="{
+                                path: 'ucDetailModel>ScrapQuantity',
+                                type: 'sap.ui.model.type.Float',
+                                formatOptions: {
+                                    minFractionDigits: 3,
+                                    maxFractionDigits: 3,
+                                    groupingEnabled: true
+                                },
+                                constraints: {
+                                    minimum: 0
+                                }
+                            }"
+                            change="onFormatValue"
+                            maxLength="5"
                         />
+                    </t:template>
+                </t:Column>
 
-                        <Button
-                            press=".onSmartTableExportPress"
-                            icon="sap-icon://excel-attachment"
+                <t:Column
+                    sortProperty="FreeQuantity"
+                    filterProperty="FreeQuantity"
+                    showSortMenuEntries="true"
+                    showFilterMenuEntries="true"
+                >
+                    <t:label>
+                        <Label text="{i18n>freeQty}" />
+                    </t:label>
+                    <t:template>
+                        <Input
+                            id="freeQty"
+                            value="{
+                                path: 'ucDetailModel>FreeQuantity',
+                                type: 'sap.ui.model.type.Float',
+                                formatOptions: {
+                                    minFractionDigits: 3,
+                                    maxFractionDigits: 3,
+                                    groupingEnabled: true
+                                },
+                                constraints: {
+                                    minimum: 0
+                                }
+                            }"
+                            change="onFormatValue"
+                            maxLength="5"
                         />
+                    </t:template>
+                </t:Column>
 
-                        <Button
-                            id="tableSettingsBtn"
-                            icon="sap-icon://action-settings"
-                            tooltip="{i18n>tableSettings}"
-                            press="onP13nButtonPress"
+                <t:Column
+                    sortProperty="Reason"
+                    filterProperty="Reason"
+                    showSortMenuEntries="true"
+                    showFilterMenuEntries="true"
+                >
+                    <t:label>
+                        <Label text="{i18n>reason}" />
+                    </t:label>
+                    <t:template>
+                        <Input
+                            id="Reason"
+                            type="Number"
+                            showValueHelp="true"
+                            valueHelpRequest="onValueHelpRequestInputsTable"
+                            change="onInputChange"
+                            maxLength="4"
+                            value="{ucDetailModel>Reason}"
+                            valueState="{ucDetailModel>ReasonState}"
+                            valueStateText="{ucDetailModel>ReasonStateText}"
                         />
-                    </Toolbar>
-                </headerToolbar>
+                    </t:template>
+                </t:Column>
 
-                <columns>
-                    <Column width="100px">
-                        <customData>
-                            <core:CustomData
-                                key="p13nKey"
-                                value="blockedQty"
-                            />
-                        </customData>
-                        <Text text="{i18n>blockedQuantity}" />
-                    </Column>
+                <t:Column
+                    sortProperty="CostCenter"
+                    filterProperty="CostCenter"
+                    showSortMenuEntries="true"
+                    showFilterMenuEntries="true"
+                >
+                    <t:label>
+                        <Label text="{i18n>costCenter}" />
+                    </t:label>
+                    <t:template>
+                        <Input
+                            id="CostCenter"
+                            showValueHelp="true"
+                            valueHelpRequest="onValueHelpRequestInputsTable"
+                            change="onInputChange"
+                            value="{ucDetailModel>CostCenter}"
+                            valueState="{ucDetailModel>CostCenterState}"
+                            valueStateText="{ucDetailModel>CostCenterStateText}"
+                        />
+                    </t:template>
+                </t:Column>
 
-                    <Column width="100px">
-                        <customData>
-                            <core:CustomData
-                                key="p13nKey"
-                                value="scrapQty"
-                            />
-                        </customData>
-                        <Text text="{i18n>scrapQuantity}" />
-                    </Column>
+                <t:Column
+                    sortProperty="HigherLevelHu"
+                    filterProperty="HigherLevelHu"
+                    showSortMenuEntries="true"
+                    showFilterMenuEntries="true"
+                >
+                    <t:label>
+                        <Label text="{i18n>higherLevelHu}" />
+                    </t:label>
+                    <t:template>
+                        <Text text="{ucDetailModel>HigherLevelHu}" />
+                    </t:template>
+                </t:Column>
 
-                    <Column width="100px">
-                        <customData>
-                            <core:CustomData
-                                key="p13nKey"
-                                value="freeQty"
-                            />
-                        </customData>
-                        <Text text="{i18n>freeQuantity}" />
-                    </Column>
+                <t:Column
+                    sortProperty="HandlingUnit"
+                    filterProperty="HandlingUnit"
+                    showSortMenuEntries="true"
+                    showFilterMenuEntries="true"
+                >
+                    <t:label>
+                        <Label text="{i18n>handlingUnit}" />
+                    </t:label>
+                    <t:template>
+                        <Text
+                            text="{
+                            path: 'ucDetailModel>HandlingUnit',
+                            formatter: '.formatter.cleanCeros'
+                        }"
+                        />
+                    </t:template>
+                </t:Column>
 
-                    <Column width="150px">
-                        <customData>
-                            <core:CustomData
-                                key="p13nKey"
-                                value="reason"
-                            />
-                        </customData>
-                        <Text text="{i18n>reason}" />
-                    </Column>
+                <t:Column
+                    sortProperty="HuIdentification"
+                    filterProperty="HuIdentification"
+                    showSortMenuEntries="true"
+                    showFilterMenuEntries="true"
+                >
+                    <t:label>
+                        <Label text="{i18n>huIdentification}" />
+                    </t:label>
+                    <t:template>
+                        <Text text="{ucDetailModel>HuIdentification}" />
+                    </t:template>
+                </t:Column>
 
-                    <Column width="150px">
-                        <customData>
-                            <core:CustomData
-                                key="p13nKey"
-                                value="costCenter"
-                            />
-                        </customData>
-                        <Text text="{i18n>costCenter}" />
-                    </Column>
+                <t:Column
+                    sortProperty="Serid"
+                    filterProperty="Serid"
+                    showSortMenuEntries="true"
+                    showFilterMenuEntries="true"
+                >
+                    <t:label>
+                        <Label text="{i18n>serId}" />
+                    </t:label>
+                    <t:template>
+                        <Text
+                            text="{
+                            path: 'ucDetailModel>Serid',
+                            formatter: '.formatter.cleanCeros'
+                        }"
+                        />
+                    </t:template>
+                </t:Column>
 
-                    <Column width="100px">
-                        <customData>
-                            <core:CustomData
-                                key="p13nKey"
-                                value="dateFrom"
-                            />
-                        </customData>
-                        <Text text="{i18n>dateFrom}" />
-                    </Column>
+                <t:Column
+                    sortProperty="StorageBin"
+                    filterProperty="StorageBin"
+                    showSortMenuEntries="true"
+                    showFilterMenuEntries="true"
+                >
+                    <t:label>
+                        <Label text="{i18n>storageBin}" />
+                    </t:label>
+                    <t:template>
+                        <Text text="{ucDetailModel>StorageBin}" />
+                    </t:template>
+                </t:Column>
 
-                    <Column width="100px">
-                        <customData>
-                            <core:CustomData
-                                key="p13nKey"
-                                value="time"
-                            />
-                        </customData>
-                        <Text text="{i18n>time}" />
-                    </Column>
-                </columns>
-
-                <items>
-                    <ColumnListItem>
-                        <cells>
-                            <Text
-                                id="blockedQty"
-                                text="{ucDetailModel>BlockedQuantity}"
-                            >
-                                <customData>
-                                    <core:CustomData
-                                        key="p13nKey"
-                                        value="blockedQty"
-                                    />
-                                </customData>
-                            </Text>
-                        </cells>
-
-                        <cells>
-                            <Input
-                                id="scrapQty"
-                                value="{ucDetailModel>ScrapQuantity}"
-                                type="Number"
-                                change="onFormatValue"
-                                maxLength="5"
-                            >
-                                <customData>
-                                    <core:CustomData
-                                        key="p13nKey"
-                                        value="scrapQty"
-                                    />
-                                </customData>
-                            </Input>
-                        </cells>
-
-                        <cells>
-                            <Input
-                                id="freeQty"
-                                value="{ucDetailModel>FreeQuantity}"
-                                type="Number"
-                                change="onFormatValue"
-                                maxLength="5"
-                            >
-                                <customData>
-                                    <core:CustomData
-                                        key="p13nKey"
-                                        value="freeQty"
-                                    />
-                                </customData>
-                            </Input>
-                        </cells>
-
-                        <cells>
-                            <Input
-                                id="Reason"
-                                type="Number"
-                                showValueHelp="true"
-                                valueHelpRequest="onValueHelpRequestInputsTable"
-                                valueStateText="{i18n>reasonRequired}"
-                                change="onInputChange"
-                                maxLength="4"
-                                value="{ucDetailModel>Reason}"
-                            >
-                                <customData>
-                                    <core:CustomData
-                                        key="p13nKey"
-                                        value="reason"
-                                    />
-                                </customData>
-                            </Input>
-                        </cells>
-
-                        <cells>
-                            <Input
-                                id="CostCenter"
-                                showValueHelp="true"
-                                valueHelpRequest="onValueHelpRequestInputsTable"
-                                valueStateText="{i18n>costCenterRequired}"
-                                change="onInputChange"
-                                value="{ucDetailModel>CostCenter}"
-                            >
-                                <customData>
-                                    <core:CustomData
-                                        key="p13nKey"
-                                        value="costCenter"
-                                    />
-                                </customData>
-                            </Input>
-                        </cells>
-
-                        <cells>
-                            <Text
-                                text="{path: 'ucDetailModel>DateFrom', formatter: '.formatter.formatDateByLocale'}"
-                            >
-                                <customData>
-                                    <core:CustomData
-                                        key="p13nKey"
-                                        value="dateFrom"
-                                    />
-                                </customData>
-                            </Text>
-                        </cells>
-
-                        <cells>
-                            <Text
-                                text="{path: 'ucDetailModel>Time', formatter: '.formatter.formatEdmTimeByLocale'}"
-                            >
-                                <customData>
-                                    <core:CustomData
-                                        key="p13nKey"
-                                        value="time"
-                                    />
-                                </customData>
-                            </Text>
-                        </cells>
-                    </ColumnListItem>
-                </items>
-            </Table>
-        </ScrollContainer>
+                <t:Column
+                    sortProperty="Weight"
+                    filterProperty="Weight"
+                    showSortMenuEntries="true"
+                    showFilterMenuEntries="true"
+                >
+                    <t:label>
+                        <Label text="{i18n>weight}" />
+                    </t:label>
+                    <t:template>
+                        <Text
+                            text="{ucDetailModel>Weight} {ucDetailModel>WeightUnit}"
+                        />
+                    </t:template>
+                </t:Column>
+            </t:columns>
+        </t:Table>
 
         <footer>
             <OverflowToolbar>

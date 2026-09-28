@@ -493,7 +493,7 @@
                                 value='\{"columnKey": "ScrapQuantity", "leadingProperty": "ScrapQuantity"}'
                             />
                         </customData>
-                        <Text text="{i18n>scrapQuantity}" />
+                        <Text text="{i18n>scrapQty}" />
                     </Column>
 
                     <Column width="100px">

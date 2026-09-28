@@ -2912,20 +2912,72 @@ sap.ui.define([
                 // oEvent.getSource().setValue(parseValue.toFixed(3));
             },
 
-            onUcDetailButtonPress: function (oEvent) {
+            onUcDetailButtonPress: async function (oEvent) {
                 const oTable = this.byId('table');
                 const aSelectedContexts = oTable.getSelectedContexts();
                 const aSelectedData = aSelectedContexts.map(ctx => ctx.getObject());
+                const oResourceBundle = this.getOwnerComponent().getModel("i18n").getResourceBundle();
+                const busyDialogTitle = oResourceBundle.getText("busyDialogTitle");
+                const busyDialog4 = (sap.ui.getCore().byId("busy4")) ? sap.ui.getCore().byId("busy4") : new sap.m.BusyDialog('busy4', {
+                    title: busyDialogTitle
+                });
 
                 if (aSelectedData.length === 0) {
-                    MessageBox.warning("Por favor, seleccione al menos un registro para ver los detalles.");
+                    MessageBox.error("Por favor, seleccione al menos un registro para ver los detalles.");
                     return;
                 }
 
+                busyDialog4.open();
+
+                const ucDetails = await this.getUcDetails(aSelectedData);
+
+                if (!ucDetails || ucDetails.length === 0) {
+                    busyDialog4.close();
+                    MessageBox.error(oResourceBundle.getText("noUcMsg"));
+                    return;
+                }
+
+                ucDetails.forEach(uc => {
+                    uc.ScrapQuantity = uc.BlockedStock,
+                        uc.FreeQuantity = "0"
+                });
+
+                busyDialog4.close();
+
                 // Pasar los datos seleccionados al controlador de detalle
-                const oDetailModel = new JSONModel({ selectedData: aSelectedData });
+                const oDetailModel = new JSONModel({ selectedData: ucDetails });
                 this.getOwnerComponent().setModel(oDetailModel, "ucDetailModel");
                 this.getOwnerComponent().getRouter().navTo("ucDetail");
+            },
+
+            getUcDetails: async function (selectedData) {
+                const oFilters = [];
+
+                selectedData.forEach(row => {
+                    let oRowFilter = new Filter({
+                        filters: [
+                            new Filter("Lgnum", FilterOperator.EQ, row.Plant),
+                            new Filter("HigherLevelHu", FilterOperator.EQ, row.HandlingUnit)
+                        ],
+                        and: true
+                    })
+
+                    oFilters.push(oRowFilter);
+                });
+
+                let oFinalFilter = new Filter({
+                    filters: oFilters,
+                    and: false
+                })
+
+                try {
+                    const response = await MatchcodesService.callGetService("/GetDetailFromUM", [oFinalFilter]);
+                    return response.results;
+                } catch (error) {
+                    console.log({ error });
+                    return [];
+                }
+
             },
 
             handleOpenDialog: function () {
