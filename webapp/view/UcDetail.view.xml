@@ -155,7 +155,7 @@
                             maxLength="4"
                             value="{ucDetailModel>Reason}"
                             valueState="{ucDetailModel>ReasonState}"
-                            valueStateText="{ucDetailModel>ReasonStateText}"
+                            valueStateText="{i18n>reasonRequired}"
                         />
                     </t:template>
                 </t:Column>
@@ -177,7 +177,7 @@
                             change="onInputChange"
                             value="{ucDetailModel>CostCenter}"
                             valueState="{ucDetailModel>CostCenterState}"
-                            valueStateText="{ucDetailModel>CostCenterStateText}"
+                            valueStateText="{i18n>costCenterRequired}"
                         />
                     </t:template>
                 </t:Column>
@@ -297,7 +297,7 @@
                     class="sapUiSmallMarginBeginEnd"
                     text="{i18n>stockTransferBtn}"
                     enabled="false"
-                    press="openPrintLabels"
+                    press="checkForSerialNumbers"
                     type="Emphasized"
                 >
                     <customData>

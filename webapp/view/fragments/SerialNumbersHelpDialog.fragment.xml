@@ -1,0 +1,22 @@
+<c:FragmentDefinition
+    xmlns="sap.m"
+    xmlns:c="sap.ui.core"
+>
+    <SelectDialog
+        noDataText="{i18n>noDataText}"
+        title="{i18n>selectSerialNumber}"
+        search=".onSearch"
+        liveChange=".onSearch"
+        searchPlaceholder="{i18n>searchSerialNumber}"
+        confirm=".onValueHelpDialogClose"
+        cancel=".onValueHelpDialogClose"
+        items="{
+            path: 'serialModel>/available'
+        }"
+    >
+        <StandardListItem
+            title="{serialModel>serialNumber}"
+            type="Active"
+        />
+    </SelectDialog>
+</c:FragmentDefinition>

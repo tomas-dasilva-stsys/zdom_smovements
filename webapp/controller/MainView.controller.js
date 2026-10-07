@@ -12,6 +12,7 @@ sap.ui.define([
     "zdomscrapmovements/services/PostmovementServiceV4",
     "sap/m/MessageBox",
     "zdomscrapmovements/model/Formatter",
+    "sap/m/MessageToast",
     "sap/ui/export/Spreadsheet",
     "sap/ui/export/library"
 ],
@@ -28,8 +29,9 @@ sap.ui.define([
         PostmovementServiceV4,
         MessageBox,
         Formatter,
+        MessageToast,
         Spreadsheet,
-        exportLibrary
+        library
     ) {
         "use strict";
         let inputId;
@@ -88,6 +90,7 @@ sap.ui.define([
                 oMessagePopover.setModel(popModel);
                 this._localChangesModel = new sap.ui.model.json.JSONModel({});
                 this.getView().setModel(this._localChangesModel, "localChanges");
+                this.getOwnerComponent().getRouter().getRoute("main").attachPatternMatched(this._onRouteMatched, this);
 
                 if (userInfo) {
                     this.setUserPlant(userInfo);
@@ -601,12 +604,29 @@ sap.ui.define([
                 const selectedItems = oTable.getSelectedItems();
 
                 selectedItems.forEach(row => {
-                    let cells = row.getCells();
-                    let blockedValue = cells.filter(cell => cell.getId().includes('blockedQty'))[0].getText();
+                    const cells = row.getCells();
+                    const findCell = name => cells.find(cell => cell.getId().includes(name));
 
-                    cells.filter(cell => cell.getId().includes('freeQty'))[0].setValue(blockedValue);
-                    cells.filter(cell => cell.getId().includes('scrapQty'))[0].setValue(parseInt('0').toFixed(3));
-                })
+                    const blockedCell = findCell("blockedQty");
+                    const freeCell = findCell("freeQty");
+                    const scrapCell = findCell("scrapQty");
+
+                    const blockedValue = blockedCell.getText();
+                    const scrapValue = (0).toFixed(3);
+
+                    // 1. Actualizar el modelo
+                    const oContext = row.getBindingContext();
+                    if (oContext) {
+                        const oModel = oContext.getModel();
+                        const sPath = oContext.getPath();
+                        oModel.setProperty(`${sPath}/FreeQuantity`, blockedValue);
+                        oModel.setProperty(`${sPath}/ScrapQuantity`, scrapValue);
+                    }
+
+                    // 2. Actualizar la vista (por si el input no está bindeado a esa propiedad)
+                    freeCell.setValue(blockedValue);
+                    scrapCell.setValue(scrapValue);
+                });
 
                 scrapToFreeBtn.setEnabled(false);
             },
@@ -1156,12 +1176,12 @@ sap.ui.define([
 
 
                     if (scrapVal > 0 && freeVal > 0) {
-                        postScrapData.PostSet.push(data);
-                        postFreeData.PostSet.push(data);
+                        postScrapData.PostSet.push({...data});
+                        postFreeData.PostSet.push({...data});
                     } else if (scrapVal > 0) {
-                        postScrapData.PostSet.push(data);
+                        postScrapData.PostSet.push({...data});
                     } else if (freeVal > 0) {
-                        postFreeData.PostSet.push(data);
+                        postFreeData.PostSet.push({...data});
                     }
                 })
 
@@ -1180,12 +1200,16 @@ sap.ui.define([
                 return { postScrapData, postFreeData };
             },
 
-            openPrintLabels: async function (oEvent) {
+            openPrintLabels: async function (serialNumbers = {}) {
                 const oResourceBundle = this.getView().getModel('i18n').getResourceBundle();
                 const transferData = this.checkTransferMovement();
                 const user = await this.getUserInfo();
 
                 if (!transferData) return;
+
+                this._attachSerials(transferData, serialNumbers);
+
+                this._lastTransferData = transferData;
 
                 if (!this._oPrintLabelsDialog) {
                     this._oPrintLabelsDialog = await this.loadFragment({
@@ -1205,6 +1229,19 @@ sap.ui.define([
                         checkBoxScrap.setSelected(Scrap);
                         checkBoxFree.setSelected(Free);
                     })
+            },
+
+            _attachSerials: function (transferData, { scrapSerials = {}, freeSerials = {} } = {}) {
+                const attach = (postData, serialsByLine) => {
+                    (postData?.PostSet || []).forEach((movement, index) => {
+                        const serials = serialsByLine[this._getMovementKey(movement, index)];
+                        if (serials?.length) {
+                            movement.ZSerialNumberSet = serials.map(sn => ({ Serialnumber: String(sn) }));
+                        }
+                    });
+                };
+                attach(transferData.postScrapData, scrapSerials);
+                attach(transferData.postFreeData, freeSerials);
             },
 
             onPrintLabelsCancel: function () {
@@ -1358,108 +1395,118 @@ sap.ui.define([
 
             onPrintLabelsConfirm: async function () {
                 const printLabelsDialog = this.byId('printLabelsDialog');
-                printLabelsDialog.setBusy(true);
-
                 const oResourceBundle = this.getView().getModel("i18n").getResourceBundle();
-                const transferData = this.checkTransferMovement();
+                const transferData = this._lastTransferData || this.checkTransferMovement();
                 const checkBoxBlocked = this.byId('cbBlockLabel');
                 const checkBoxScrap = this.byId('cbScrapLabel');
                 const checkBoxFree = this.byId('cbFreeLabel');
 
-                await this.postScrapMovement(transferData.postScrapData, transferData.postFreeData);
+                printLabelsDialog.setBusyIndicatorDelay(0);
+                printLabelsDialog.setBusy(true);
 
-                const sUrl = `/sap/opu/odata/sap/ZDOM_SIPMECA_SRV_01/ZfmSaveDefectPrintCollection('0001')/$value`;
-                const printPromises = [];
-                const printData = transferData.postFreeData.PostSet.length > 0 ? transferData.postFreeData.PostSet[0] : transferData.postScrapData.PostSet[0];
+                await new Promise(resolve => requestAnimationFrame(() => setTimeout(resolve, 0)));
 
-                // Lógica para seleccionar que print se realizará.
-                if (checkBoxFree.getSelected()) {
-                    const slugData = {
-                        "IvWerks": printData.Werks,
-                        "IvWorkCtr": printData.WorkCtr,
-                        "handlingunit": printData.Huident,
-                        "qmnum": printData.Qmnum,
-                        "print": "3"
+                try {
+
+                    await this.postScrapMovement(transferData.postScrapData, transferData.postFreeData);
+
+                    const sUrl = `/sap/opu/odata/sap/ZDOM_SIPMECA_SRV_01/ZfmSaveDefectPrintCollection('0001')/$value`;
+                    const printPromises = [];
+                    const printData = transferData.postFreeData.PostSet.length > 0 ? transferData.postFreeData.PostSet[0] : transferData.postScrapData.PostSet[0];
+
+                    // Lógica para seleccionar que print se realizará.
+                    if (checkBoxFree.getSelected()) {
+                        const slugData = {
+                            "IvWerks": printData.Werks,
+                            "IvWorkCtr": printData.WorkCtr,
+                            "handlingunit": printData.Huident,
+                            "qmnum": printData.Qmnum,
+                            "print": "3"
+                        }
+
+                        printPromises.push(
+                            fetch(sUrl, {
+                                headers: {
+                                    "Slug": JSON.stringify(slugData),
+                                    "Accept": "application/pdf"
+                                }
+                            }).catch(oError => {
+                                console.log(oError);
+                                return null; // para que un fallo no rompa el Promise.all
+                            })
+                        );
                     }
 
-                    printPromises.push(
-                        fetch(sUrl, {
-                            headers: {
-                                "Slug": JSON.stringify(slugData),
-                                "Accept": "application/pdf"
-                            }
-                        }).catch(oError => {
-                            console.log(oError);
-                            return null; // para que un fallo no rompa el Promise.all
-                        })
-                    );
-                }
+                    if (checkBoxScrap.getSelected()) {
+                        const slugData = {
+                            "qmnum": printData.Qmnum,
+                            "print": "2"
+                        }
 
-                if (checkBoxScrap.getSelected()) {
-                    const slugData = {
-                        "qmnum": printData.Qmnum,
-                        "print": "2"
+                        printPromises.push(
+                            fetch(sUrl, {
+                                headers: {
+                                    "Slug": JSON.stringify(slugData),
+                                    "Accept": "application/pdf"
+                                }
+                            }).catch(oError => {
+                                console.log(oError);
+                                return null;
+                            })
+                        );
                     }
 
-                    printPromises.push(
-                        fetch(sUrl, {
-                            headers: {
-                                "Slug": JSON.stringify(slugData),
-                                "Accept": "application/pdf"
-                            }
-                        }).catch(oError => {
-                            console.log(oError);
-                            return null;
-                        })
-                    );
-                }
+                    if (checkBoxBlocked.getSelected()) {
+                        const slugData = {
+                            "qmnum": printData.Qmnum,
+                            "print": "1"
+                        }
 
-                if (checkBoxBlocked.getSelected()) {
-                    const slugData = {
-                        "qmnum": printData.Qmnum,
-                        "print": "1"
+                        printPromises.push(
+                            fetch(sUrl, {
+                                headers: {
+                                    "Slug": JSON.stringify(slugData),
+                                    "Accept": "application/pdf"
+                                }
+                            }).catch(oError => {
+                                console.log(oError);
+                                return null;
+                            })
+                        );
                     }
 
-                    printPromises.push(
-                        fetch(sUrl, {
-                            headers: {
-                                "Slug": JSON.stringify(slugData),
-                                "Accept": "application/pdf"
-                            }
-                        }).catch(oError => {
-                            console.log(oError);
-                            return null;
-                        })
-                    );
-                }
+                    if (printPromises.length > 0) {
+                        const responses = await Promise.all(printPromises);
+                        const allOk = responses.every(response => response && response.ok);
 
-                if (printPromises.length > 0) {
-                    const responses = await Promise.all(printPromises);
-                    const allOk = responses.every(response => response && response.ok);
-
-                    if (allOk) {
-                        sap.m.MessageToast.show(oResourceBundle.getText("printedSuccessfully"));
-                    } else {
-                        sap.m.MessageToast.show(oResourceBundel.getText("printError"));
+                        if (allOk) {
+                            sap.m.MessageToast.show(oResourceBundle.getText("printedSuccessfully"));
+                        } else {
+                            sap.m.MessageToast.show(oResourceBundel.getText("printError"));
+                        }
                     }
+                } catch (oError) {
+                    console.error(oError);
+                    MessageBox.error(oResourceBundle.getText("printError"));
+                } finally {
+                    // this._lastTransferData = null;
+                    printLabelsDialog.setBusy(false);
+                    printLabelsDialog.close();
                 }
-
-                printLabelsDialog.setBusy(false);
-                printLabelsDialog.close();
             },
             postScrapMovement: async function (postScrapData, postFreeData) {
                 const that = this;
                 const oResourceBundle = this.getView().getModel("i18n").getResourceBundle();
-                const busyDialogTitle = oResourceBundle.getText("busyDialogTitle");
+                // const busyDialogTitle = oResourceBundle.getText("busyDialogTitle");
                 const notificationPanel = this.getView().byId('messagePopoverBtn');
                 const freeMovementTitle = oResourceBundle.getText("freeMovements");
                 const scrapMovementTitle = oResourceBundle.getText("scrapMovements");
                 const oSmartTable = this.getView().byId('smartTable');
-                const busyDialog4 = (sap.ui.getCore().byId("busy4")) ? sap.ui.getCore().byId("busy4") : new sap.m.BusyDialog('busy4', {
-                    title: busyDialogTitle
-                });
+                // const busyDialog4 = (sap.ui.getCore().byId("busy4")) ? sap.ui.getCore().byId("busy4") : new sap.m.BusyDialog('busy4', {
+                //     title: busyDialogTitle
+                // });
 
-                busyDialog4.open();
+                // busyDialog4.open();
 
                 return new Promise((resolve, reject) => {
                     let tasks = [];
@@ -1531,7 +1578,7 @@ sap.ui.define([
                             sap.m.MessageBox.error(oError.response.statusText);
                             // console.log(oError);
                         }).finally(() => {
-                            busyDialog4.close();
+                            // busyDialog4.close();
                         })
 
                         tasks.push(freeTask);
@@ -1540,7 +1587,7 @@ sap.ui.define([
                     Promise.all(tasks)
                         .then(() => resolve())
                         .catch((err) => reject(err))
-                        .finally(() => busyDialog4.close());
+                    // .finally(() => busyDialog4.close());
                 });
             },
 
@@ -2914,44 +2961,49 @@ sap.ui.define([
 
             onUcDetailButtonPress: async function (oEvent) {
                 const oTable = this.byId('table');
+                const oResourceBundle = this.getOwnerComponent().getModel("i18n").getResourceBundle();
                 const aSelectedContexts = oTable.getSelectedContexts();
                 const aSelectedData = aSelectedContexts.map(ctx => ctx.getObject());
-                const oResourceBundle = this.getOwnerComponent().getModel("i18n").getResourceBundle();
-                const busyDialogTitle = oResourceBundle.getText("busyDialogTitle");
-                const busyDialog4 = (sap.ui.getCore().byId("busy4")) ? sap.ui.getCore().byId("busy4") : new sap.m.BusyDialog('busy4', {
-                    title: busyDialogTitle
-                });
 
                 if (aSelectedData.length === 0) {
                     MessageBox.error("Por favor, seleccione al menos un registro para ver los detalles.");
                     return;
                 }
 
-                busyDialog4.open();
-
                 const ucDetails = await this.getUcDetails(aSelectedData);
+                const aParentRows = aSelectedContexts.map(ctx => {
+                    const { __metadata, ...oClean } = ctx.getObject();
+                    return oClean;
+                });
 
                 if (!ucDetails || ucDetails.length === 0) {
-                    busyDialog4.close();
                     MessageBox.error(oResourceBundle.getText("noUcMsg"));
                     return;
                 }
 
                 ucDetails.forEach(uc => {
-                    uc.ScrapQuantity = uc.BlockedStock,
-                        uc.FreeQuantity = "0"
+                    const oParent = aParentRows.find(r =>
+                        r.Plant === uc.Lgnum && r.HandlingUnit === uc.HigherLevelHu
+                    );
+                    uc.ScrapQuantity = uc.BlockedStock;
+                    uc.FreeQuantity = "0";
+                    uc.parent = oParent;
                 });
 
-                busyDialog4.close();
-
                 // Pasar los datos seleccionados al controlador de detalle
-                const oDetailModel = new JSONModel({ selectedData: ucDetails });
-                this.getOwnerComponent().setModel(oDetailModel, "ucDetailModel");
+                const oModel = this.getOwnerComponent().getModel("ucDetailModel");
+                oModel.setProperty('/selectedData', ucDetails);
+                oModel.setProperty('/parentRows', aParentRows);
                 this.getOwnerComponent().getRouter().navTo("ucDetail");
             },
 
             getUcDetails: async function (selectedData) {
                 const oFilters = [];
+                const oResourceBundle = this.getOwnerComponent().getModel("i18n").getResourceBundle();
+                const busyDialogTitle = oResourceBundle.getText("busyDialogTitle");
+                const busyDialog4 = (sap.ui.getCore().byId("busy4")) ? sap.ui.getCore().byId("busy4") : new sap.m.BusyDialog('busy4', {
+                    title: busyDialogTitle
+                });
 
                 selectedData.forEach(row => {
                     let oRowFilter = new Filter({
@@ -2970,11 +3022,26 @@ sap.ui.define([
                     and: false
                 })
 
+                busyDialog4.open();
+
                 try {
                     const response = await MatchcodesService.callGetService("/GetDetailFromUM", [oFinalFilter]);
+                    let hasUcs = true;
+
+                    response.results.forEach(item => {
+                        if(item.HigherLevelHu === item.HandlingUnit) {
+                            hasUcs = false;
+                        }
+                    })
+                    
+                    busyDialog4.close();
+                    
+                    if (!hasUcs) return [];
+                    
                     return response.results;
                 } catch (error) {
                     console.log({ error });
+                    busyDialog4.close();
                     return [];
                 }
 
@@ -2997,171 +3064,6 @@ sap.ui.define([
             handleMessagePopoverPress: function (oEvent) {
                 oMessagePopover.toggle(oEvent.getSource());
             },
-
-            // onSmartTableExportPress: async function () {
-            //     try {
-            //         const oSmartTable = this.byId("smartTable");
-            //         const oInnerTable = oSmartTable.getTable();
-            //         let oBinding = oInnerTable.getBinding("rows") || oInnerTable.getBinding("items");
-
-            //         if (!oBinding) {
-            //             sap.m.MessageToast.show("No hay datos disponibles para exportar.");
-            //             return;
-            //         }
-
-            //         sap.ui.core.BusyIndicator.show(0);
-
-            //         // --- Asegurar carga completa ---
-            //         const iTotal = oBinding.getLength();
-
-            //         if (iTotal > 1500) {
-            //             await new Promise(resolve => {
-            //                 const fnHandler = () => {
-            //                     try { oBinding.detachDataReceived(fnHandler); } catch (e) { }
-            //                     resolve();
-            //                 };
-            //                 try { oBinding.attachDataReceived(fnHandler); } catch (e) { resolve(); }
-            //                 try {
-            //                     oBinding.getContexts(0, iTotal > 0 ? iTotal : 100000);
-            //                 } catch (e) {
-            //                     console.warn("getContexts lanzó excepción:", e);
-            //                     resolve();
-            //                 }
-            //             });
-            //         }
-
-            //         // --- Obtener todos los datos ---
-            //         const aContexts = oBinding.getContexts(0, iTotal > 0 ? iTotal : 10000);
-            //         const aExportData = [];
-
-            //         aContexts.forEach(ctx => {
-            //             const oObj = ctx?.getObject?.();
-            //             if (!oObj) return;
-
-            //             const row = { ...oObj };
-
-            //             // Aplicar formatters
-            //             row.NotificationCreationDate = parseToDate(row.NotificationCreationDate);
-            //             row.NotificationCreationTime = parseTime(row.NotificationCreationTime);
-            //             row.Time = parseTime(row.Time);
-
-            //             aExportData.push(row);
-            //         });
-
-            //         const aColumns = this.getColumnsFromTable(oInnerTable);
-
-            //         // --- Configurar exportación ---
-            //         const oExportSettings = {
-            //             workbook: { columns: aColumns },
-            //             dataSource: aExportData,
-            //             fileName: "Export_ScrapMovements.xlsx"
-            //         };
-
-            //         // --- Generar Excel ---
-            //         const oSheet = new Spreadsheet(oExportSettings);
-            //         await oSheet.build();
-            //         oSheet.destroy();
-            //     } catch (error) {
-            //         console.error("Error en exportación:", error);
-            //         sap.m.MessageToast.show("Error en exportación: " + error.message);
-            //     } finally {
-            //         sap.ui.core.BusyIndicator.hide();
-            //     }
-
-            //     // === Helpers ===
-
-            //     function parseToDate(raw) {
-            //         if (raw == null || raw === "") return null;
-            //         if (raw instanceof Date) return isNaN(raw.getTime()) ? null : raw;
-
-            //         const s = String(raw).trim();
-            //         let m = /\/Date\((\d+)(?:[+-]\d+)?\)\//.exec(s);
-            //         if (m) return new Date(parseInt(m[1], 10));
-
-            //         if (/^\d{8}$/.test(s)) {
-            //             const year = parseInt(s.slice(0, 4), 10);
-            //             const month = parseInt(s.slice(4, 6), 10) - 1;
-            //             const day = parseInt(s.slice(6, 8), 10);
-            //             return new Date(year, month, day);
-            //         }
-
-            //         m = /^(\d{4})[-\/](\d{2})[-\/](\d{2})/.exec(s);
-            //         if (m) return new Date(parseInt(m[1], 10), parseInt(m[2], 10) - 1, parseInt(m[3], 10));
-
-            //         const d2 = new Date(s);
-            //         return isNaN(d2.getTime()) ? null : d2;
-            //     }
-
-            //     function parseTime(vMs) {
-            //         if (vMs == null || vMs === "") return "";
-            //         let ms = typeof vMs === "object" ? vMs.ms : vMs;
-            //         if (typeof ms === "string" && ms.startsWith("PT")) {
-            //             // formato OData PTxxHxxMxxS
-            //             const regex = /PT(\d+)H(\d+)M(\d+)S/;
-            //             const match = regex.exec(ms);
-            //             if (match) {
-            //                 const [_, h, m, s] = match;
-            //                 return `${h.padStart(2, "0")}:${m.padStart(2, "0")}:${s.padStart(2, "0")}`;
-            //             }
-            //         }
-            //         if (isNaN(ms)) return vMs;
-            //         let totalSeconds = Math.floor(ms / 1000);
-            //         let hours = Math.floor(totalSeconds / 3600);
-            //         let minutes = Math.floor((totalSeconds % 3600) / 60);
-            //         let seconds = totalSeconds % 60;
-            //         return `${hours.toString().padStart(2, "0")}:${minutes
-            //             .toString()
-            //             .padStart(2, "0")}:${seconds.toString().padStart(2, "0")}`;
-            //     }
-            // },
-
-            // getColumnsFromResponsiveTable: function (oInnerTable) {
-            //     const aColumns = [];
-
-            //     oInnerTable.getColumns().forEach(col => {
-            //         let sLabel = "";
-            //         let sProperty = "";
-
-            //         // === Obtener label ===
-            //         const oHeader = col.getHeader && col.getHeader();
-            //         if (oHeader) {
-            //             if (typeof oHeader.getText === "function") {
-            //                 sLabel = oHeader.getText();
-            //             } else if (typeof oHeader === "string") {
-            //                 sLabel = oHeader;
-            //             }
-            //         }
-
-            //         // === Obtener property desde customData (p13nData) ===
-            //         const aCustomData = col.getCustomData && col.getCustomData();
-            //         if (Array.isArray(aCustomData)) {
-            //             aCustomData.forEach(cd => {
-            //                 const key = cd.getKey && cd.getKey();
-            //                 if (key === "p13nData") {
-            //                     try {
-            //                         const v = cd.getValue();
-            //                         const parsed = typeof v === "string" ? JSON.parse(v) : v;
-            //                         if (parsed && (parsed.leadingProperty || parsed.columnKey)) {
-            //                             sProperty = parsed.leadingProperty || parsed.columnKey;
-            //                         }
-            //                     } catch (e) {
-            //                         console.warn("Error parseando p13nData:", e);
-            //                     }
-            //                 }
-            //             });
-            //         }
-
-            //         if (!sProperty) return;
-
-            //         aColumns.push({
-            //             label: sLabel || sProperty,
-            //             property: sProperty,
-            //             type: this.deduceColumnType(sProperty)
-            //         });
-            //     });
-
-            //     return aColumns;
-            // },
 
             getColumnsFromTable: function (oInnerTable) {
 
@@ -3361,6 +3263,265 @@ sap.ui.define([
                         }
                     }
                 });
+            },
+
+            _onRouteMatched: async function (oEvent) {
+                const oTable = this.byId("smartTable");
+
+                if (oTable) {
+                    oTable.rebindTable();
+                }
+            },
+
+            checkForSerialNumbers: async function () {
+                const scrapErr = this.checkTransferMovement();
+                if (!scrapErr) return;
+
+                const oFilters = [];
+                const oResourceBundle = this.getOwnerComponent().getModel("i18n").getResourceBundle();
+                const busyDialogTitle = oResourceBundle.getText("busyDialogTitle");
+                const busyDialog4 = (sap.ui.getCore().byId("busy4")) ? sap.ui.getCore().byId("busy4") : new sap.m.BusyDialog('busy4', {
+                    title: busyDialogTitle
+                });
+                const oTable = this.byId('table');
+                const selectedData = oTable.getSelectedItems().map(item => item.getBindingContext().getObject());
+                const aSelectedContexts = oTable.getSelectedContexts();
+                busyDialog4.open();
+
+                try {
+                    const ucDetails = await this.getUcDetails(selectedData);
+                    const serialNumbers = ucDetails.filter(uc => uc.Serid && uc.Serid.trim() !== "").map(uc => uc.Serid);
+
+                    if (serialNumbers.length === 0) {
+                        this.openPrintLabels({});
+                        return;
+                    }
+
+                    const aParentRows = aSelectedContexts.map(ctx => {
+                        const { __metadata, ...oClean } = ctx.getObject();
+                        return oClean;
+                    });
+
+                    if (!ucDetails || ucDetails.length === 0) {
+                        MessageBox.error(oResourceBundle.getText("noUcMsg"));
+                        return;
+                    }
+
+                    ucDetails.forEach(uc => {
+                        const oParent = aParentRows.find(r =>
+                            r.Plant === uc.Lgnum && r.HandlingUnit === uc.HigherLevelHu
+                        );
+                        uc.ScrapQuantity = uc.BlockedStock;
+                        uc.FreeQuantity = "0";
+                        uc.parent = oParent;
+                    });
+
+                    const oModel = this.getOwnerComponent().getModel("ucDetailModel");
+                    oModel.setProperty('/selectedData', ucDetails);
+                    oModel.setProperty('/parentRows', aParentRows);
+
+                    this.getOwnerComponent().setModel({ serialNumbers }, "serNumbersModel");
+
+                    const aLines = selectedData.filter(row =>
+                        Number(row.BlockedQuantity) != Number(row.ScrapQuantity) &&
+                        Number(row.BlockedQuantity) != Number(row.FreeQuantity)
+                    ).map((row, index) => {
+                        return {
+                            lineKey: this._buildLineKey(index, row.ItemNumber, row.Lgort),
+                            component: row.Component,
+                            scrapQty: Number(row.ScrapQuantity || 0),
+                            freeQty: Number(row.FreeQuantity || 0)
+                        };
+                    });
+
+                    busyDialog4.close();
+                    this._openSerialNumbersDialog(aLines);
+                } catch (error) {
+                    console.log({ error });
+                    busyDialog4.close();
+                    return [];
+                }
+            },
+
+            _buildLineKey: function (index, itemNumber, lgort) {
+                return [index, itemNumber, lgort].map(v => String(v ?? "").trim()).join("|");
+            },
+
+            _getMovementKey: function (m, index) {
+                return this._buildLineKey(index, m.ItemNumber, m.Lgort);
+            },
+
+            _openSerialNumbersDialog: async function (aLines) {
+                if (aLines.length === 0) {
+                    this.openPrintLabels({});
+                    return;
+                }
+                const aAllSerials = this.getOwnerComponent().getModel("serNumbersModel");
+
+                const createItems = (qtyKey) => aLines.flatMap(line =>
+                    Array.from({ length: line[qtyKey] }, () => ({
+                        lineKey: line.lineKey,
+                        component: line.component,
+                        serialNumber: "",
+                        valueState: "None"
+                    }))
+                );
+
+                const aScrapItems = createItems("scrapQty");
+                const aFreeItems = createItems("freeQty");
+
+                const oModel = new JSONModel({
+                    allSerials: aAllSerials,
+                    available: [],
+                    scrapItems: aScrapItems,
+                    freeItems: aFreeItems,
+                    scrapVisible: aScrapItems.length > 0,
+                    freeVisible: aFreeItems.length > 0
+                });
+
+                const oDialog = await this.getFragment("SerialNumbersDialog");
+                oDialog.setModel(oModel, "serialModel");
+                oDialog.open();
+            },
+
+            onSerialValueHelp: async function (oEvent) {
+                const oInput = oEvent.getSource();
+                const oModel = oInput.getModel("serialModel");
+                const oCurrentItem = oInput.getBindingContext("serialModel").getObject();
+
+                this._oCurrentInput = oInput;
+
+                // Serial numbers ya elegidos en OTROS inputs
+                const aTaken = [...oModel.getProperty("/scrapItems"), ...oModel.getProperty("/freeItems")]
+                    .filter(item => item !== oCurrentItem && item.serialNumber)
+                    .map(item => item.serialNumber);
+
+                const aAvailable = oModel.getProperty("/allSerials").serialNumbers
+                    .filter(s => !aTaken.includes(s))
+                    .map((s, index) => ({ key: index, serialNumber: s }));
+
+                oModel.setProperty("/available", aAvailable);
+
+                const oHelpDialog = await this.getFragment("SerialNumbersHelpDialog");
+                oHelpDialog.setModel(oModel, "serialModel");
+                oHelpDialog.open();
+            },
+
+            _validateSerialInput: function (oInput) {
+                const oResourceBundle = this.getOwnerComponent().getModel("i18n").getResourceBundle();
+                const oSerialModel = oInput.getModel("serialModel");
+                const sValue = (oInput.getValue() || "").trim();
+                const oContext = oInput.getBindingContext("serialModel");
+                const sCurrPath = oContext ? oContext.getPath() : null;
+
+                const setError = (sTextKey) => {
+                    oInput.setValueState("Error");
+                    oInput.setValueStateText(oResourceBundle.getText(sTextKey, [sValue]));
+                    return false;
+                };
+
+                // 1. Vacío
+                if (!sValue) {
+                    return setError("serialNumberEmpty");
+                }
+
+                // 2. Existe en el value help
+                const aValidSerials = oSerialModel.getProperty("/allSerials").serialNumbers || [];
+                const bExists = aValidSerials.some(
+                    (oSerial) => (oSerial.serialNumber ?? oSerial) === sValue
+                );
+                if (!bExists) {
+                    return setError("serialNumberInvalid");
+                }
+
+                // 3. Repetido en otro input (excluyendo el propio)
+                const aFree = oSerialModel.getProperty("/freeItems") || [];
+                const aScrap = oSerialModel.getProperty("/scrapItems") || [];
+                const aAllItems = [
+                    ...aFree.map((oItem, i) => ({ path: `/freeItems/${i}`, serial: oItem.serialNumber })),
+                    ...aScrap.map((oItem, i) => ({ path: `/scrapItems/${i}`, serial: oItem.serialNumber }))
+                ];
+                const bRepeated = aAllItems.some(
+                    (oItem) => oItem.path !== sCurrPath && oItem.serial === sValue
+                );
+                if (bRepeated) {
+                    return setError("serialNumberRepited");
+                }
+
+                // 4. Válido
+                oInput.setValueState("None");
+                oInput.setValueStateText("");
+                return true;
+            },
+
+            _getSerialInputs: function () {
+                return this.getView().findAggregatedObjects(true, (oCtrl) => {
+                    const oBinding = oCtrl.isA("sap.m.Input") && oCtrl.getBinding("value");
+                    return oBinding && oBinding.getPath() === "serialNumber";
+                });
+            },
+
+            onConfirmSerialNumbers: function (oEvent) {
+                const oResourceBundle = this.getOwnerComponent().getModel("i18n").getResourceBundle();
+
+                const aResults = this._getSerialInputs().map((oInput) => this._validateSerialInput(oInput));
+                const bAllValid = aResults.every(Boolean);
+
+                if (!bAllValid) {
+                    const oResourceBundle = this.getOwnerComponent().getModel("i18n").getResourceBundle();
+                    MessageToast.show(oResourceBundle.getText("serialNumbersInvalid"));
+                    return;
+                }
+
+                const oDialog = oEvent.getSource().getParent();
+                const oModel = oDialog.getModel("serialModel");
+                const aScrap = oModel.getProperty("/scrapItems");
+                const aFree = oModel.getProperty("/freeItems");
+                oModel.refresh(true);
+
+                const groupByLine = (items) => items.reduce((acc, i) => {
+                    (acc[i.lineKey] = acc[i.lineKey] || []).push(i.serialNumber);
+                    return acc;
+                }, {});
+
+                const serialNumbersPayload = {
+                    scrapSerials: groupByLine(aScrap),
+                    freeSerials: groupByLine(aFree)
+                };
+
+                oDialog.close();
+                this.openPrintLabels(serialNumbersPayload);
+            },
+
+            onSerialInputChange: function (oEvent) {
+                const oCurrInput = oEvent.getSource();
+                this._validateSerialInput(oCurrInput);
+
+                // Re-valida los otros inputs que estaban en error (por ejemplo, un duplicado que ya se corrigió)
+                this._getSerialInputs()
+                    .filter((oInput) => oInput !== oCurrInput && oInput.getValueState() === "Error")
+                    .forEach((oInput) => this._validateSerialInput(oInput));
+            },
+
+            onValueHelpDialogClose: function (oEvent) {
+                const oSelectedItem = oEvent.getParameter("selectedItem");
+
+                if (oSelectedItem && this._oCurrentInput) {
+                    const oModel = this._oCurrentInput.getModel("serialModel");
+                    const sPath = this._oCurrentInput.getBindingContext("serialModel").getPath();
+                    oModel.setProperty(sPath + "/serialNumber", oSelectedItem.getTitle());
+                    oModel.setProperty(sPath + "/valueState", "None");
+                }
+
+                // limpiar filtro de búsqueda para la próxima apertura
+                const oBinding = oEvent.getSource().getBinding("items");
+                if (oBinding) {
+                    oBinding.filter([]);
+                }
+            },
+
+            onCancelSerialNumbers: function (oEvent) {
+                oEvent.getSource().getParent().close();
             },
 
             // onSmartTableExportPress: async function () {

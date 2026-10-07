@@ -55,7 +55,10 @@
         "sap.ui.generic.app": {},
         "sap.ui.table": {},
         "sap.ui.fl": {},
-        "sap.ushell": {}
+        "sap.ushell": {},
+        "sap.ui.export": {
+          "lazy": true
+        }
       }
     },
     "contentDensities": {

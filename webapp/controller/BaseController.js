@@ -21,7 +21,7 @@ sap.ui.define([
     MessageBox,
     MessageToast,
     Spreadsheet,
-    library,
+    exportLibrary,
     JSONModel,
     AppJsonModel,
     MatchcodesService,
@@ -97,6 +97,7 @@ sap.ui.define([
                     delete this.oFragments[sKey];
                 }, this);
             }
+            this._oPrintLabelsDialog = null;
         },
 
         onExitDialog: function () {
@@ -164,12 +165,19 @@ sap.ui.define([
         },
 
         checkCostCenterPath: async function (oInput) {
+            let currWorkcenter;
+            let currentPlant;
+
             if (!oInput.getBindingContext()) {
-                return { path: "/MatchCodeCostCenter", filters: [] };
+                // return { path: "/MatchCodeCostCenter", filters: [] };
+                const parentRowData = oInput.getParent().getRowBindingContext().getObject().parent;
+                currWorkcenter = parentRowData.WorkCenter;
+                currentPlant = parentRowData.Plant;
+            } else {
+                currWorkcenter = oInput.getBindingContext().getObject().WorkCenter;
+                currentPlant = oInput.getBindingContext().getObject().Plant;
             }
 
-            const currWorkcenter = oInput.getBindingContext().getObject().WorkCenter;
-            const currentPlant = oInput.getBindingContext().getObject().Plant;
             const currInputValue = oInput.getValue();
             const aFilter = [
                 new Filter("workcenter", FilterOperator.EQ, currWorkcenter),
@@ -760,44 +768,51 @@ sap.ui.define([
             const blockedErrMsg = oResourceBundle.getText("blockedErrMsg");
             const emptyValesErrMsg = oResourceBundle.getText("emptyValuesMsg");
             const oTable = this.byId("table");
-            const oItems = oTable.getSelectedItems();
+            const bIsUiTable = oTable.isA("sap.ui.table.Table");
+            const aRows = this._getSelectedRows(oTable);
 
             const errors = { blocked: 0, emptyFields: 0, emptyValues: 0 };
             const postScrapData = { PostSet: [], ReturnSet: [] };
             const postFreeData = { PostSet: [], ReturnSet: [] };
 
-            oItems.forEach(item => {
-                const oContext = item.getBindingContext();
-                const blockedVal = parseFloat(oContext.getProperty("BlockedQuantity"));
-                const scrapVal = parseFloat(item.getCells().find(cell => cell.sId.includes("scrapQty")).getValue());
-                const freeVal = parseFloat(item.getCells().find(cell => cell.sId.includes("freeQty")).getValue());
-                const reasonVal = item.getCells().find(cell => cell.sId.includes("Reason")).getValue();
-                const costCenterVal = item.getCells().find(cell => cell.sId.includes("CostCenter")).getValue();
+            aRows.forEach(oRow => {
+                const src = this._getRowSource(oRow, bIsUiTable);
+                const aCells = oRow.getCells();
+                const getCell = name => aCells.find(cell => cell.sId.includes(name));
+
+                const blockedRaw = bIsUiTable ? src.BlockedStock : src.BlockedQuantity;
+                const blockedVal = parseFloat(blockedRaw);
+                const scrapVal = parseFloat(getCell("scrapQty").getValue());
+                const freeVal = parseFloat(getCell("freeQty").getValue());
+                const reasonCell = getCell("Reason");
+                const costCenterCell = getCell("CostCenter");
+                const reasonVal = reasonCell.getValue();
+                const costCenterVal = costCenterCell.getValue();
                 const amountToTransfer = scrapVal + freeVal;
 
                 const data = {
-                    Aufnr: oContext.getProperty("ProductionOrder"),
-                    Sortf: oContext.getProperty("ProductionOperation"),
-                    Charg: oContext.getProperty("Charg"),
-                    Idnrk: oContext.getProperty("Component"),
-                    Material: oContext.getProperty("Material"),
-                    ItemNumber: oContext.getProperty("ItemNumber"),
-                    Lgort: oContext.getProperty("StorageLocation"),
-                    Menge: oContext.getProperty("Quantity"),
-                    Qmart: oContext.getProperty("NotificationType"),
-                    Qmnum: oContext.getProperty("NotificationNumber"),
-                    Rsnum: oContext.getProperty("ReserveNumber"),
-                    Stlnr: oContext.getProperty("BomNumber"),
-                    Sernr: oContext.getProperty("SerialNumber"),
-                    UnitOfMeasure: oContext.getProperty("UnitOfMeasure"),
-                    Werks: oContext.getProperty("Plant"),
-                    WorkCtr: oContext.getProperty("WorkCenter"),
-                    Zblocked: oContext.getProperty("BlockedQuantity"),
+                    Aufnr: src.ProductionOrder,
+                    Sortf: src.ProductionOperation,
+                    Charg: src.Charg,
+                    Idnrk: src.Component,
+                    Material: src.Material,
+                    ItemNumber: src.ItemNumber,
+                    Lgort: src.StorageLocation,
+                    Menge: src.Quantity,
+                    Qmart: src.NotificationType,
+                    Qmnum: src.NotificationNumber,
+                    Rsnum: src.ReserveNumber,
+                    Stlnr: src.BomNumber,
+                    Sernr: src.SerialNumber,
+                    UnitOfMeasure: src.UnitOfMeasure,
+                    Werks: src.Plant,
+                    WorkCtr: src.WorkCenter,
+                    Zblocked: src.BlockedQuantity,
                     Zfree: freeVal.toFixed(3),
                     Zscrap: scrapVal.toFixed(3),
-                    Zuser: oContext.getProperty("Zuser"),
-                    Huident: oContext.getProperty("HandlingUnit"),
-                    ChargEWM: oContext.getProperty("Batch"),
+                    Zuser: src.Zuser,
+                    Huident: src.HandlingUnit,
+                    ChargEWM: src.Batch,
                     Reason: reasonVal,
                     CostCenter: costCenterVal
                 };
@@ -808,8 +823,8 @@ sap.ui.define([
                 }
 
                 if (scrapVal > 0 && (!reasonVal || !costCenterVal)) {
-                    item.getCells().find(cell => cell.sId.includes("Reason")).setValueState("Error");
-                    item.getCells().find(cell => cell.sId.includes("CostCenter")).setValueState("Error");
+                    reasonCell.setValueState("Error");
+                    costCenterCell.setValueState("Error");
                     errors.emptyFields++;
                 }
 
@@ -818,17 +833,11 @@ sap.ui.define([
                     return;
                 }
 
-                if (reasonVal) item.getCells().find(cell => cell.sId.includes("Reason")).setValueState("None");
-                if (costCenterVal) item.getCells().find(cell => cell.sId.includes("CostCenter")).setValueState("None");
+                if (reasonVal) reasonCell.setValueState("None");
+                if (costCenterVal) costCenterCell.setValueState("None");
 
-                if (scrapVal > 0 && freeVal > 0) {
-                    postScrapData.PostSet.push(data);
-                    postFreeData.PostSet.push(data);
-                } else if (scrapVal > 0) {
-                    postScrapData.PostSet.push(data);
-                } else if (freeVal > 0) {
-                    postFreeData.PostSet.push(data);
-                }
+                if (scrapVal > 0) postScrapData.PostSet.push({ ...data });
+                if (freeVal > 0) postFreeData.PostSet.push({ ...data });
             });
 
             if (errors.blocked > 0) {
@@ -846,13 +855,14 @@ sap.ui.define([
 
         postScrapMovement: async function (postScrapData, postFreeData) {
             const that = this;
+            const oTable = this.byId("table");
             const oResourceBundle = this.getView().getModel("i18n").getResourceBundle();
-            const busyDialogTitle = oResourceBundle.getText("busyDialogTitle");
+            // const busyDialogTitle = oResourceBundle.getText("busyDialogTitle");
             const freeMovementTitle = oResourceBundle.getText("freeMovements");
             const scrapMovementTitle = oResourceBundle.getText("scrapMovements");
-            const busyDialog4 = sap.ui.getCore().byId("busy4") || new sap.m.BusyDialog("busy4", { title: busyDialogTitle });
+            // const busyDialog4 = sap.ui.getCore().byId("busy4") || new sap.m.BusyDialog("busy4", { title: busyDialogTitle });
 
-            busyDialog4.open();
+            // busyDialog4.open();
 
             return new Promise((resolve, reject) => {
                 const tasks = [];
@@ -861,7 +871,7 @@ sap.ui.define([
                     const scrapTask = TransferService.callPostService("/ZfmPostScrapSet", postScrapData).then(data => {
                         that._pushMessages(data.ReturnSet.results, scrapMovementTitle);
                         that._stockTransfer = true;
-                        that.refreshAfterPost();
+                        that.refreshAfterPost(oTable);
                     }).catch(oError => console.log(oError));
 
                     tasks.push(scrapTask);
@@ -871,7 +881,7 @@ sap.ui.define([
                     const freeTask = TransferService.callPostService("/ZfmPostFreeSet", postFreeData).then(data => {
                         that._pushMessages(data.ReturnSet.results, freeMovementTitle);
                         that._stockTransfer = true;
-                        that.refreshAfterPost();
+                        that.refreshAfterPost(oTable);
                         postFreeData.PostSet[0].Huident = data.PostSet.results[0].Huident;
                     }).catch(oError => {
                         MessageBox.error(oError?.response?.statusText || oResourceBundle.getText("errorMsg"));
@@ -883,7 +893,7 @@ sap.ui.define([
                 Promise.all(tasks)
                     .then(() => resolve())
                     .catch(err => reject(err))
-                    .finally(() => busyDialog4.close());
+                // .finally(() => busyDialog4.close());
             });
         },
 
@@ -891,18 +901,72 @@ sap.ui.define([
         // postear un movimiento. MainView lo pisa con smartTable.rebindTable(),
         // UcDetail con lo que corresponda (recargar el JSONModel, volver
         // atrás, etc). Acá queda un no-op por defecto.
-        refreshAfterPost: function () {
-            // override en cada controller si hace falta
+        refreshAfterPost: async function (oTable) {
+            if (!oTable.isA("sap.ui.table.Table")) {
+                oTable.rebindTable();
+                return;
+            }
+
+            await this._reloadUcDetails();
+
+        },
+
+        getUcDetails: async function (aParentRows) {
+            const oFinalFilter = new Filter({
+                filters: aParentRows.map(row => new Filter({
+                    filters: [
+                        new Filter("Lgnum", FilterOperator.EQ, row.Plant),
+                        new Filter("HigherLevelHu", FilterOperator.EQ, row.HandlingUnit)
+                    ],
+                    and: true
+                })),
+                and: false
+            });
+
+            const response = await MatchcodesService.callGetService("/GetDetailFromUM", [oFinalFilter]);
+            return response.results;
+        },
+
+        decorateUc: function (aUc, aParentRows) {
+            aUc.forEach(uc => {
+                uc.ScrapQuantity = uc.BlockedStock;
+                uc.FreeQuantity = "0";
+                uc.Reason = "";
+                uc.CostCenter = "";
+                uc.parent = aParentRows.find(r => r.Plant === uc.Lgnum && r.HandlingUnit === uc.HigherLevelHu);
+            });
+            return aUc;
+        },
+
+        _reloadUcDetails: async function () {
+            const oModel = this.getOwnerComponent().getModel("ucDetailModel");
+            const oTable = this.byId("table");
+            const aParentRows = oModel.getProperty("/parentRows");
+
+            oTable.setBusyIndicatorDelay(0);
+            oTable.setBusy(true);
+
+            try {
+                const aUc = this.decorateUc(await this.getUcDetails(aParentRows), aParentRows);
+                oTable.clearSelection();
+                oModel.setProperty("/selectedData", aUc);
+            } catch (oError) {
+                console.error(oError);
+                // MessageBox.error(this.getOwnerComponent().getModel("i18n").getResourceBundle().getText("reloadError"));
+            } finally {
+                oTable.setBusy(false);
+            }
         },
 
         // ==================================================================
         // IMPRESIÓN DE ETIQUETAS
         // ==================================================================
 
-        openPrintLabels: async function () {
+        openPrintLabels: async function (serialNumbers = {}) {
             const transferData = this.checkTransferMovement();
             if (!transferData) return;
 
+            this._attachSerials(transferData, serialNumbers);
             this._lastTransferData = transferData;
 
             const userInfo = await this.getUserInfo?.();
@@ -924,6 +988,28 @@ sap.ui.define([
                     checkBoxFree.setSelected(Free);
                 });
             }
+        },
+
+        _attachSerials: function (transferData, { scrapSerials = {}, freeSerials = {} } = {}) {
+            const attach = (postData, serialsByLine) => {
+                (postData?.PostSet || []).forEach((movement, index) => {
+                    const serials = serialsByLine[this._getMovementKey(movement, index)];
+                    if (serials?.length) {
+                        movement.ZSerialNumberSet = serials.map(sn => ({ Serialnumber: String(sn) }));
+                    }
+                });
+            };
+            attach(transferData.postScrapData, scrapSerials);
+            attach(transferData.postFreeData, freeSerials);
+        },
+
+        _buildLineKey: function (index, itemNumber, lgort) {
+            return [index, itemNumber, lgort].map(v => String(v ?? "").trim()).join("|");
+        },
+
+
+        _getMovementKey: function (m, index) {
+            return this._buildLineKey(index, m.ItemNumber, m.Lgort);
         },
 
         onPrintLabelsCancel: function () {
@@ -962,7 +1048,6 @@ sap.ui.define([
 
         onPrintLabelsConfirm: async function () {
             const printLabelsDialog = this.byId("printLabelsDialog");
-            printLabelsDialog.setBusy(true);
 
             const oResourceBundle = this.getView().getModel("i18n").getResourceBundle();
             const transferData = this._lastTransferData || this.checkTransferMovement();
@@ -974,6 +1059,10 @@ sap.ui.define([
                 printLabelsDialog.setBusy(false);
                 return;
             }
+
+            printLabelsDialog.setBusyIndicatorDelay(0);
+            printLabelsDialog.setBusy(true);
+            await new Promise(resolve => requestAnimationFrame(() => setTimeout(resolve, 0)));
 
             await this.postScrapMovement(transferData.postScrapData, transferData.postFreeData);
 
@@ -1041,14 +1130,14 @@ sap.ui.define([
             if (this._inputId === 'CostCenter') {
                 const aSelectedData = this._getSelectedData(oTable);
 
-                let uniqueWorkcenters = new Set(aSelectedData.map(oData => oData.WorkCenter));
+                let uniqueWorkcenters = new Set(aSelectedData.map(oData => oData.parent.WorkCenter));
                 let workcentersArray = Array.from(uniqueWorkcenters);
                 let aFilters = [];
 
                 const uniqueRecords = Array.from(
                     new Map(
                         aSelectedData.map(oData => [
-                            `${oData.Plant}-${oData.WorkCenter}`, // clave única compuesta
+                            `${oData.parent.Plant}-${oData.parent.WorkCenter}`, // clave única compuesta
                             oData
                         ])
                     ).values()
@@ -1057,8 +1146,8 @@ sap.ui.define([
                 uniqueRecords.forEach(oData => {
                     let combinedFilters = new Filter({
                         filters: [
-                            new Filter('workcenter', FilterOperator.EQ, oData.WorkCenter),
-                            new Filter('plant', FilterOperator.EQ, oData.Plant)
+                            new Filter('workcenter', FilterOperator.EQ, oData.parent.WorkCenter),
+                            new Filter('plant', FilterOperator.EQ, oData.parent.Plant)
                         ],
                         and: true
                     });
@@ -1401,6 +1490,27 @@ sap.ui.define([
                 .map(oCtx => oCtx.getObject());
         },
 
+        _getSelectedRows: function (oTable) {
+            if (oTable.isA("sap.ui.table.Table")) {
+                const aRows = oTable.getRows();
+                return oTable.getSelectedIndices()
+                    .map(i => aRows.find(r => r.getIndex() === i))
+                    .filter(Boolean); // solo filas renderizadas
+            }
+            return oTable.getSelectedItems();
+        },
+
+        _getRowSource: function (oRow, bIsUiTable) {
+            // Devuelve un objeto plano con todas las props que necesita el payload
+            if (!bIsUiTable) {
+                return { ...oRow.getBindingContext().getObject() };
+            }
+            const oUc = oRow.getBindingContext("ucDetailModel").getObject();
+            const { parent, ...oUcOwn } = oUc;
+            // Props del padre como base; las propias de la UC pisan lo que corresponda
+            return { ...parent, ...oUcOwn };
+        },
+
         // ==================================================================
         // EXPORT A EXCEL (genérico: recibe la tabla real -
         // sap.ui.table.Table de la SmartTable en MainView, o
@@ -1430,8 +1540,9 @@ sap.ui.define([
                     let oOverrides = {};
 
                     if (mMassChanges && oModel.createKey) {
-                        const sKeyPath = oModel.createKey(sEntityPath, { ...oObj });
-                        oOverrides = mMassChanges[sKeyPath] || {};
+                        // const sKeyPath = oModel.createKey(sEntityPath, { ...oObj });
+                        const sKey = oModel.getKey(oObj);
+                        oOverrides = mMassChanges[sKey] || mMassChanges["/" + sKey] || {};
                     }
 
                     const oMerged = { ...oObj, ...oOverrides };
@@ -1515,7 +1626,31 @@ sap.ui.define([
                     }
                 });
 
-                if (!sProperty) return;
+                // if (!sProperty) return;
+
+                // Fallbacks para sap.ui.table.Column
+                if (!sProperty && bIsGridTable) {
+                    // 1. sortProperty / filterProperty (lo más habitual)
+                    sProperty = (col.getSortProperty && col.getSortProperty())
+                        || (col.getFilterProperty && col.getFilterProperty())
+                        || "";
+
+                    // 2. Binding del template (Text, Input, ObjectStatus, etc.)
+                    if (!sProperty && col.getTemplate) {
+                        const oTemplate = col.getTemplate();
+                        if (oTemplate) {
+                            const aBindingProps = ["text", "value", "title", "number", "selectedKey", "src"];
+                            for (const sProp of aBindingProps) {
+                                const oInfo = oTemplate.getBindingInfo && oTemplate.getBindingInfo(sProp);
+                                const oPart = oInfo && oInfo.parts && oInfo.parts[0];
+                                if (oPart && oPart.path) {
+                                    sProperty = oPart.path;
+                                    break;
+                                }
+                            }
+                        }
+                    }
+                }
 
                 const oColDef = { label: sLabel || sProperty, property: sProperty, width: 20 };
 

@@ -736,7 +736,7 @@
                     class="sapUiSmallMarginBeginEnd"
                     text="{i18n>stockTransferBtn}"
                     enabled="false"
-                    press="openPrintLabels"
+                    press="checkForSerialNumbers"
                     type="Emphasized"
                 >
                     <customData>

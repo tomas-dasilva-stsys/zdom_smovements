@@ -7,8 +7,13 @@ sap.ui.define([
     "sap/ui/Device",
     "zdomscrapmovements/model/models",
     "zdomscrapmovements/utils/FioriComponent",
+    "sap/ui/model/json/JSONModel"
 ],
-    function (UIComponent, Device, models, FioriComponent) {
+    function (UIComponent,
+	Device,
+	models,
+	FioriComponent,
+	JSONModel) {
         "use strict";
 
         return UIComponent.extend("zdomscrapmovements.Component", {
@@ -33,6 +38,8 @@ sap.ui.define([
 
                 // Establecer el título del documento
                 document.title = sAppTitle;
+
+                this.setModel(new JSONModel({ selectedData: [], parentRows: [] }), "ucDetailModel");
 
                 // enable routing
                 this.getRouter().initialize();

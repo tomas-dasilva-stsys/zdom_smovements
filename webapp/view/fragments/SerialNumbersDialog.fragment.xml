@@ -1,0 +1,66 @@
+<c:FragmentDefinition
+    xmlns="sap.m"
+    xmlns:c="sap.ui.core"
+>
+    <Dialog
+        title="{i18n>assignSerialNumber}"
+        contentWidth="26rem"
+    >
+        <VBox class="sapUiSmallMargin">
+            <VBox
+                visible="{serialModel>/scrapVisible}"
+                class="sapUiSmallMarginBottom"
+            >
+                <Title
+                    text="{i18n>toScrap}"
+                    level="H4"
+                    class="sapUiTinyMarginBottom"
+                />
+                <VBox items="{serialModel>/scrapItems}">
+                    <Input
+                        value="{serialModel>serialNumber}"
+                        placeholder="{i18n>selectSerialNumber}"
+                        showValueHelp="true"
+                        valueState="{serialModel>valueState}"
+                        valueHelpRequest=".onSerialValueHelp"
+                        change=".onSerialInputChange"
+                        class="sapUiTinyMarginBottom"
+                    />
+                </VBox>
+            </VBox>
+
+            <VBox visible="{serialModel>/freeVisible}">
+                <Title
+                    text="{i18n>toFree}"
+                    level="H4"
+                    class="sapUiTinyMarginBottom"
+                />
+                <VBox items="{serialModel>/freeItems}">
+                    <Input
+                        value="{serialModel>serialNumber}"
+                        placeholder="{i18n>selectSerialNumber}"
+                        showValueHelp="true"
+                        valueState="{serialModel>valueState}"
+                        valueHelpRequest=".onSerialValueHelp"
+                        change=".onSerialInputChange"
+                        class="sapUiTinyMarginBottom"
+                    />
+                </VBox>
+            </VBox>
+        </VBox>
+
+        <beginButton>
+            <Button
+                text="{i18n>confirmBtn}"
+                type="Emphasized"
+                press=".onConfirmSerialNumbers"
+            />
+        </beginButton>
+        <endButton>
+            <Button
+                text="{i18n>cancelBtn}"
+                press=".onCancelSerialNumbers"
+            />
+        </endButton>
+    </Dialog>
+</c:FragmentDefinition>
