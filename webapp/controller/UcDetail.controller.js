@@ -4,14 +4,16 @@ sap.ui.define([
     "sap/ui/model/json/JSONModel",
     "sap/ui/model/Filter",
     "sap/ui/model/FilterOperator",
-    "sap/m/MessageToast"
+    "sap/m/MessageToast",
+    "sap/m/MessageBox",
 ], function (
     BaseController,
-    Formatter,
-    JSONModel,
-    Filter,
-    FilterOperator,
-    MessageToast,
+	Formatter,
+	JSONModel,
+	Filter,
+	FilterOperator,
+	MessageToast,
+	MessageBox,
 ) {
     "use strict";
 
@@ -169,6 +171,7 @@ sap.ui.define([
         },
 
         checkForSerialNumbers: async function () {
+            const oResourceBundle = this.getOwnerComponent().getModel("i18n").getResourceBundle();
             const transferData = this.checkTransferMovement();
             if (!transferData) return;
 
@@ -180,6 +183,20 @@ sap.ui.define([
             const partialMove = aSelectedRows.some(row => {
                 return Number(row.BlockedStock) != Number(row.ScrapQuantity) && Number(row.BlockedStock) != Number(row.FreeQuantity);
             });
+
+            const partialFree = aSelectedRows.some(row => {
+                if (Number(row.ScrapQuantity) !== Number(row.BlockedStock) && Number(row.FreeQuantity) === 0) return false;
+
+                let totalQty = Number(row.ScrapQuantity) + Number(row.FreeQuantity);
+                if (Number(row.BlockedStock) !== totalQty) return true;
+
+                return Number(row.BlockedStock) != Number(row.FreeQuantity) && Number(row.ScrapQuantity) === 0;
+            }) 
+
+            if (partialFree) {
+                MessageBox.information(oResourceBundle.getText("pratialMoveUcLevel"));
+                return;
+            }
 
             if (aLines.length && partialMove && hasSerials.length > 0) {
                 this._openSerialNumbersDialog(aLines);
