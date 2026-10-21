@@ -31,7 +31,7 @@ sap.ui.define([
         Formatter,
         MessageToast,
         Spreadsheet,
-        library
+        exportLibrary
     ) {
         "use strict";
         let inputId;
@@ -687,26 +687,16 @@ sap.ui.define([
                 }
             },
 
-            setMessageType: function (oMessage) {
-                const oResourceBundle = this.getView().getModel("i18n").getResourceBundle();
-                const successMsg = oResourceBundle.getText("successMsg");
-                const errorMsg = oResourceBundle.getText("errorMsg");
-                const warningMsg = oResourceBundle.getText("warningMsg");
-                const infoMsg = oResourceBundle.getText("infoMsg");
-                const abortMsg = oResourceBundle.getText("abortMsg");
+            setMessageType: function (sType) {
+                const oRB = this.getView().getModel("i18n").getResourceBundle();
 
-                switch (oMessage) {
-                    case 'S':
-                        return { T: 'Success', subtitle: successMsg }
-                    case 'E':
-                        return { T: 'Error', subtitle: errorMsg }
-                    case 'W':
-                        return { T: 'Warning', subtitle: warningMsg }
+                switch ((sType || "").trim().toUpperCase()) {
+                    case 'S': return { T: 'Success', subtitle: oRB.getText("successMsg") };
+                    case 'E': return { T: 'Error', subtitle: oRB.getText("errorMsg") };
+                    case 'W': return { T: 'Warning', subtitle: oRB.getText("warningMsg") };
+                    case 'A': return { T: 'Abort', subtitle: oRB.getText("abortMsg") };
                     case 'I':
-                        return { T: 'Information', subtitle: infoMsg }
-                    case 'A':
-                        return { T: 'Abort', subtitle: abortMsg }
-
+                    default: return { T: 'Information', subtitle: oRB.getText("infoMsg") };
                 }
             },
 
@@ -715,7 +705,7 @@ sap.ui.define([
                 const oTable = this.byId('table');
                 const oBinding = oTable?.getBinding("items") || oTable?.getBinding("rows");
                 // getting table items
-                let tableItems = oTable.getItems();
+                let tableItems = this._getDataRows(oTable);
                 // setting regEx
                 let regEx = /--([a-zA-Z]+)--([a-zA-Z]+)/;
 
@@ -909,6 +899,13 @@ sap.ui.define([
                 this.byId('stockTransferBtn').setEnabled(false);
                 this.byId('scrapToFreeBtn').setEnabled(false);
                 this.byId('ucDetailBtn').setEnabled(false);
+            },
+
+            _getDataRows: function (oTable) {
+                if (!oTable) return [];
+                return oTable.getItems().filter(item =>
+                    !item.isA("sap.m.GroupHeaderListItem") && typeof item.getCells === "function"
+                );
             },
 
             clearTableInputs: function (tableItems) {
@@ -1112,6 +1109,8 @@ sap.ui.define([
                 let postScrapData = { PostSet: [], ReturnSet: [] };
                 let postFreeData = { PostSet: [], ReturnSet: [] };
 
+                const lines = [];
+
                 oItems.forEach(item => {
                     let oContext = item.getBindingContext();
                     let blockedVal = parseFloat(oContext.getProperty("BlockedQuantity"));
@@ -1120,8 +1119,10 @@ sap.ui.define([
                     let reasonVal = item.getCells().filter(cell => cell.sId.includes('Reason'))[0].getValue();
                     let costCenterVal = item.getCells().filter(cell => cell.sId.includes('CostCenter'))[0].getValue();
                     let amountToTransfer = scrapVal + freeVal;
+                    const lineKey = oContext.getPath();
 
                     let data = {
+                        _lineKey: lineKey,
                         Aufnr: oContext.getProperty("ProductionOrder"),
                         Sortf: oContext.getProperty("ProductionOperation"),
                         Charg: oContext.getProperty("Charg"),
@@ -1176,13 +1177,20 @@ sap.ui.define([
 
 
                     if (scrapVal > 0 && freeVal > 0) {
-                        postScrapData.PostSet.push({...data});
-                        postFreeData.PostSet.push({...data});
+                        postScrapData.PostSet.push({ ...data });
+                        postFreeData.PostSet.push({ ...data });
                     } else if (scrapVal > 0) {
-                        postScrapData.PostSet.push({...data});
+                        postScrapData.PostSet.push({ ...data });
                     } else if (freeVal > 0) {
-                        postFreeData.PostSet.push({...data});
+                        postFreeData.PostSet.push({ ...data });
                     }
+
+                    lines.push({
+                        lineKey,
+                        component: oContext.getProperty("Component"),
+                        scrapQty: scrapVal,
+                        freeQty: freeVal
+                    });
                 })
 
                 if (errors.blocked > 0) {
@@ -1197,7 +1205,7 @@ sap.ui.define([
                 if (errors.emptyFields > 0) return false;
 
                 // this.postScrapMovement(postScrapData, postFreeData);
-                return { postScrapData, postFreeData };
+                return { postScrapData, postFreeData, lines };
             },
 
             openPrintLabels: async function (serialNumbers = {}) {
@@ -1233,8 +1241,8 @@ sap.ui.define([
 
             _attachSerials: function (transferData, { scrapSerials = {}, freeSerials = {} } = {}) {
                 const attach = (postData, serialsByLine) => {
-                    (postData?.PostSet || []).forEach((movement, index) => {
-                        const serials = serialsByLine[this._getMovementKey(movement, index)];
+                    (postData?.PostSet || []).forEach(movement => {
+                        const serials = serialsByLine[movement._lineKey];
                         if (serials?.length) {
                             movement.ZSerialNumberSet = serials.map(sn => ({ Serialnumber: String(sn) }));
                         }
@@ -1482,12 +1490,12 @@ sap.ui.define([
                         if (allOk) {
                             sap.m.MessageToast.show(oResourceBundle.getText("printedSuccessfully"));
                         } else {
-                            sap.m.MessageToast.show(oResourceBundel.getText("printError"));
+                            sap.m.MessageToast.show(oResourceBundle.getText("printError"));
                         }
                     }
                 } catch (oError) {
                     console.error(oError);
-                    MessageBox.error(oResourceBundle.getText("printError"));
+                    // MessageBox.error(oResourceBundle.getText("printError"));
                 } finally {
                     // this._lastTransferData = null;
                     printLabelsDialog.setBusy(false);
@@ -1502,11 +1510,11 @@ sap.ui.define([
                 const freeMovementTitle = oResourceBundle.getText("freeMovements");
                 const scrapMovementTitle = oResourceBundle.getText("scrapMovements");
                 const oSmartTable = this.getView().byId('smartTable');
-                // const busyDialog4 = (sap.ui.getCore().byId("busy4")) ? sap.ui.getCore().byId("busy4") : new sap.m.BusyDialog('busy4', {
-                //     title: busyDialogTitle
-                // });
 
-                // busyDialog4.open();
+
+                [postScrapData, postFreeData].forEach(post =>
+                    (post?.PostSet || []).forEach(m => delete m._lineKey)
+                );
 
                 return new Promise((resolve, reject) => {
                     let tasks = [];
@@ -1538,7 +1546,16 @@ sap.ui.define([
                             notificationPanel.setEnabled(true);
                             stockTransfer = true;
                             // that.handleCloseDialog();
-                            oSmartTable.rebindTable();
+                            const hu = data?.PostSet?.results?.[0]?.Huident;
+                            if (hu) {
+                                postFreeData.PostSet[0].Huident = hu;
+                            }
+
+                            try {
+                                oSmartTable.rebindTable();
+                            } catch (e) {
+                                console.error("rebindTable falló:", e);
+                            }
                         }).catch((oError) => {
                             console.log(oError);
                         })
@@ -1572,11 +1589,20 @@ sap.ui.define([
                             notificationPanel.setEnabled(true);
                             stockTransfer = true;
                             // that.handleCloseDialog();
-                            oSmartTable.rebindTable();
-                            postFreeData.PostSet[0].Huident = data.PostSet.results[0].Huident;
+
+                            const hu = data?.PostSet?.results?.[0]?.Huident;
+                            if (hu) {
+                                postFreeData.PostSet[0].Huident = hu;
+                            }
+
+                            try {
+                                oSmartTable.rebindTable();
+                            } catch (e) {
+                                console.error("rebindTable falló:", e);
+                            }
                         }).catch((oError) => {
-                            sap.m.MessageBox.error(oError.response.statusText);
-                            // console.log(oError);
+                            sap.m.MessageBox.error(oError?.response?.statusText || oError?.message || "Error");
+                            throw oError;
                         }).finally(() => {
                             // busyDialog4.close();
                         })
@@ -2303,15 +2329,7 @@ sap.ui.define([
 
                 // Obtener tabla y fila
                 let oTable = this.byId("table");
-                let oRow = oInput.getParent(); // parent del input es una celda, y su parent es la fila
-
-                // Obtener índice visible de la fila
-                currRowPosition = oTable.getItems().indexOf(oRow); // Índice absoluto en la tabla
-
-                if (currRowPosition === -1) {
-                    console.warn("No se pudo determinar la fila para el Value Help.");
-                    return;
-                }
+                this._oCurrentRow = oInput.getParent();
 
                 if (inputId === 'CostCenter') {
                     let sPath = await this.checkCostCenterPath(oInput)
@@ -2431,62 +2449,45 @@ sap.ui.define([
             },
 
             onValueHelpOkPress: function (oEvent) {
-                const oTable = this.byId('table');
-                const regex = /--([a-zA-Z]+)--([a-zA-Z]+)/;
-                let currValue;
-
-                if (inputId === 'CostCenter') {
-                    let rowSelected = oTable.getItems()[currRowPosition];
-                    let oCtx = rowSelected.getBindingContext();
-                    const oModel = oCtx.getModel();
-                    const sRowPath = oCtx.getPath();
-
-                    if (!oEvent.getParameter("tokens")[0].getCustomData()[0].getValue().costcenter) {
-                        currValue = oEvent.getParameter("tokens")[0].getCustomData()[0].getValue().CostCenter
-                    } else {
-                        currValue = currValue = oEvent.getParameter("tokens")[0].getCustomData()[0].getValue().costcenter;
-                    }
-
-                    oModel.setProperty(`${sRowPath}/${inputId}`, currValue);
-                    const oInput = rowSelected.getCells().find(c => c.getId().includes(inputId));
-
-                    if (oInput) {
-                        oInput.setValueState("None");
-                    }
-
+                const tokens = oEvent.getParameter("tokens") || [];
+                if (tokens.length === 0) {
                     this.onExitDialog();
                     return;
                 }
 
-                let rowSelected = oTable.getItems()[currRowPosition];
-                let tokensSelected = oEvent.getParameter('tokens').map(token => ({ key: token.getKey(), text: token.getText() }));
-                if (tokensSelected) {
-                    currValue = tokensSelected[0].key;
+                // Inputs que no pertenecen a una fila de la tabla
+                if (inputId !== 'Reason' && inputId !== 'CostCenter') {
+                    const tokensSelected = tokens.map(token => ({ key: token.getKey(), text: token.getText() }));
+                    AppJsonModel.setInnerProperty('/FilterValues', inputId, tokensSelected);
+                    this.onExitDialog();
+                    return;
                 }
-                let oCtx = rowSelected.getBindingContext();
+
+                // Inputs de fila: Reason y CostCenter
+                const rowSelected = this._oCurrentRow;
+                const oCtx = rowSelected?.getBindingContext();
 
                 if (!oCtx) {
                     this.onExitDialog();
                     return;
                 }
 
-                const oModel = oCtx.getModel();
-                const sRowPath = oCtx.getPath();
-                oModel.setProperty(`${sRowPath}/${inputId}`, currValue);
+                let currValue;
+                if (inputId === 'CostCenter') {
+                    const oData = tokens[0].getCustomData()[0].getValue();
+                    currValue = oData.costcenter || oData.CostCenter;
+                } else {
+                    currValue = tokens[0].getKey();
+                }
+
+                oCtx.getModel().setProperty(`${oCtx.getPath()}/${inputId}`, currValue);
 
                 const oInput = rowSelected.getCells().find(c => c.getId().includes(inputId));
-
                 if (oInput) {
                     oInput.setValueState("None");
                 }
 
-
-                if (inputId !== 'Reason' && inputId !== 'CostCenter') {
-                    AppJsonModel.setInnerProperty('/FilterValues', inputId, tokensSelected);
-                    this.onExitDialog();
-                    return;
-                }
-
+                this._oCurrentRow = null;
                 this.onExitDialog();
             },
 
@@ -2900,8 +2901,8 @@ sap.ui.define([
 
                 if (!currValue) return;
 
-                if (currValue) {
-                    currentRow.getCells().filter(cell => cell.getId().match(regEx)[2] === 'Reason')[0].setValueState('None');
+                if (oEvent.getParameter("value")) {
+                    oEvent.getSource().setValueState('None');
                 }
             },
 
@@ -2970,13 +2971,14 @@ sap.ui.define([
                     return;
                 }
 
-                const ucDetails = await this.getUcDetails(aSelectedData);
+                const { results: ucDetails, hasUcs } = await this.getUcDetails(aSelectedData);
+                const serialNumbers = ucDetails.map(uc => uc.Serid).filter(sn => sn && sn.trim() !== '');
                 const aParentRows = aSelectedContexts.map(ctx => {
                     const { __metadata, ...oClean } = ctx.getObject();
                     return oClean;
                 });
 
-                if (!ucDetails || ucDetails.length === 0) {
+                if (!hasUcs) {
                     MessageBox.error(oResourceBundle.getText("noUcMsg"));
                     return;
                 }
@@ -2990,10 +2992,15 @@ sap.ui.define([
                     uc.parent = oParent;
                 });
 
+                const uniqueUcs = Array.from(new Map(ucDetails.map(o => [o.HandlingUnit, o])).values());
+
                 // Pasar los datos seleccionados al controlador de detalle
                 const oModel = this.getOwnerComponent().getModel("ucDetailModel");
-                oModel.setProperty('/selectedData', ucDetails);
+                const serialNumbersModel = this.getOwnerComponent().getModel("serNumbersModel");
+                oModel.setProperty('/selectedData', uniqueUcs);
                 oModel.setProperty('/parentRows', aParentRows);
+                serialNumbersModel.setProperty('/serialNumbers', serialNumbers);
+
                 this.getOwnerComponent().getRouter().navTo("ucDetail");
             },
 
@@ -3028,23 +3035,27 @@ sap.ui.define([
                     const response = await MatchcodesService.callGetService("/GetDetailFromUM", [oFinalFilter]);
                     let hasUcs = true;
 
+                    if (response.results.length === 0) {
+                        hasUcs = false;
+                        return { results: response.results, hasUcs };
+                    }
+
                     response.results.forEach(item => {
-                        if(item.HigherLevelHu === item.HandlingUnit) {
+                        if (item.HigherLevelHu === item.HandlingUnit) {
                             hasUcs = false;
                         }
                     })
-                    
-                    busyDialog4.close();
-                    
-                    if (!hasUcs) return [];
-                    
-                    return response.results;
+
+                    // if (!hasUcs) return [];
+
+                    return { results: response.results, hasUcs };
                 } catch (error) {
                     console.log({ error });
-                    busyDialog4.close();
-                    return [];
-                }
 
+                    return { results: [], hasUcs: false };
+                } finally {
+                    busyDialog4.close();
+                }
             },
 
             handleOpenDialog: function () {
@@ -3274,10 +3285,9 @@ sap.ui.define([
             },
 
             checkForSerialNumbers: async function () {
-                const scrapErr = this.checkTransferMovement();
-                if (!scrapErr) return;
+                const transferData = this.checkTransferMovement();
+                if (!transferData) return;
 
-                const oFilters = [];
                 const oResourceBundle = this.getOwnerComponent().getModel("i18n").getResourceBundle();
                 const busyDialogTitle = oResourceBundle.getText("busyDialogTitle");
                 const busyDialog4 = (sap.ui.getCore().byId("busy4")) ? sap.ui.getCore().byId("busy4") : new sap.m.BusyDialog('busy4', {
@@ -3289,21 +3299,25 @@ sap.ui.define([
                 busyDialog4.open();
 
                 try {
-                    const ucDetails = await this.getUcDetails(selectedData);
+                    const { results: ucDetails, hasUcs } = await this.getUcDetails(selectedData);
                     const serialNumbers = ucDetails.filter(uc => uc.Serid && uc.Serid.trim() !== "").map(uc => uc.Serid);
-
-                    if (serialNumbers.length === 0) {
-                        this.openPrintLabels({});
-                        return;
-                    }
 
                     const aParentRows = aSelectedContexts.map(ctx => {
                         const { __metadata, ...oClean } = ctx.getObject();
                         return oClean;
                     });
 
-                    if (!ucDetails || ucDetails.length === 0) {
-                        MessageBox.error(oResourceBundle.getText("noUcMsg"));
+                    const partialMove = aParentRows.some(row => {
+                        return Number(row.BlockedQuantity) != Number(row.ScrapQuantity) && Number(row.BlockedQuantity) != Number(row.FreeQuantity);
+                    });
+
+                    if (partialMove && hasUcs) {
+                        MessageBox.information(oResourceBundle.getText("partialMoveWithUc"));
+                        return;
+                    }
+
+                    if (serialNumbers.length === 0) {
+                        this.openPrintLabels({});
                         return;
                     }
 
@@ -3317,38 +3331,23 @@ sap.ui.define([
                     });
 
                     const oModel = this.getOwnerComponent().getModel("ucDetailModel");
+                    const serNumbersModel = this.getOwnerComponent().getModel("serNumbersModel");
                     oModel.setProperty('/selectedData', ucDetails);
                     oModel.setProperty('/parentRows', aParentRows);
+                    serNumbersModel.setProperty('/serialNumbers', serialNumbers);
 
-                    this.getOwnerComponent().setModel({ serialNumbers }, "serNumbersModel");
+                    if (!partialMove) {
+                        this.openPrintLabels({});
+                        return;
+                    }
 
-                    const aLines = selectedData.filter(row =>
-                        Number(row.BlockedQuantity) != Number(row.ScrapQuantity) &&
-                        Number(row.BlockedQuantity) != Number(row.FreeQuantity)
-                    ).map((row, index) => {
-                        return {
-                            lineKey: this._buildLineKey(index, row.ItemNumber, row.Lgort),
-                            component: row.Component,
-                            scrapQty: Number(row.ScrapQuantity || 0),
-                            freeQty: Number(row.FreeQuantity || 0)
-                        };
-                    });
-
-                    busyDialog4.close();
-                    this._openSerialNumbersDialog(aLines);
+                    this._openSerialNumbersDialog(transferData.lines);
                 } catch (error) {
                     console.log({ error });
-                    busyDialog4.close();
                     return [];
+                } finally {
+                    busyDialog4.close();
                 }
-            },
-
-            _buildLineKey: function (index, itemNumber, lgort) {
-                return [index, itemNumber, lgort].map(v => String(v ?? "").trim()).join("|");
-            },
-
-            _getMovementKey: function (m, index) {
-                return this._buildLineKey(index, m.ItemNumber, m.Lgort);
             },
 
             _openSerialNumbersDialog: async function (aLines) {
@@ -3356,10 +3355,10 @@ sap.ui.define([
                     this.openPrintLabels({});
                     return;
                 }
-                const aAllSerials = this.getOwnerComponent().getModel("serNumbersModel");
+                const aAllSerials = this.getOwnerComponent().getModel("serNumbersModel").getProperty("/serialNumbers") || [];
 
                 const createItems = (qtyKey) => aLines.flatMap(line =>
-                    Array.from({ length: line[qtyKey] }, () => ({
+                    Array.from({ length: Math.floor(Number(line[qtyKey]) || 0) }, () => ({
                         lineKey: line.lineKey,
                         component: line.component,
                         serialNumber: "",
@@ -3396,7 +3395,7 @@ sap.ui.define([
                     .filter(item => item !== oCurrentItem && item.serialNumber)
                     .map(item => item.serialNumber);
 
-                const aAvailable = oModel.getProperty("/allSerials").serialNumbers
+                const aAvailable = (oModel.getProperty("/allSerials") || [])
                     .filter(s => !aTaken.includes(s))
                     .map((s, index) => ({ key: index, serialNumber: s }));
 
@@ -3426,10 +3425,9 @@ sap.ui.define([
                 }
 
                 // 2. Existe en el value help
-                const aValidSerials = oSerialModel.getProperty("/allSerials").serialNumbers || [];
-                const bExists = aValidSerials.some(
-                    (oSerial) => (oSerial.serialNumber ?? oSerial) === sValue
-                );
+                const aValidSerials = oSerialModel.getProperty("/allSerials") || [];
+                const bExists = aValidSerials.includes(sValue);
+
                 if (!bExists) {
                     return setError("serialNumberInvalid");
                 }

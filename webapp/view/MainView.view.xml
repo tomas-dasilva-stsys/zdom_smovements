@@ -424,7 +424,7 @@
                         id="ucDetailBtn"
                         type="Emphasized"
                         enabled="false"
-                        text="UC Detail"
+                        text="{i18n>ucDetail}"
                         icon="sap-icon://detail-view"
                         press="onUcDetailButtonPress"
                     />

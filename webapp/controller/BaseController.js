@@ -11,7 +11,8 @@ sap.ui.define([
     "sap/ui/model/json/JSONModel",
     "zdomscrapmovements/model/AppJsonModel",
     "zdomscrapmovements/services/MatchcodesService",
-    "zdomscrapmovements/services/TransferService"
+    "zdomscrapmovements/services/TransferService",
+    "sap/base/util/uid"
 ], function (
     Controller,
     Filter,
@@ -25,7 +26,8 @@ sap.ui.define([
     JSONModel,
     AppJsonModel,
     MatchcodesService,
-    TransferService
+    TransferService,
+    uid
 ) {
     "use strict";
 
@@ -59,6 +61,7 @@ sap.ui.define([
             this._inputId = null;
             this._currRowPosition = null;
             this._stockTransfer = false;
+            this._lineKeyByRow = new WeakMap();
 
             this.oFragments = this.oFragments || {};
             this._mDialogs = this._mDialogs || {};
@@ -583,7 +586,7 @@ sap.ui.define([
 
         onFormatValue: function (oEvent) {
             const oInput = oEvent.getSource();
-            const oCtx = oInput.getBindingContext();
+            const oCtx = oInput.getBindingContext() ? oInput.getBindingContext() : oInput.getBindingContext("ucDetailModel");
             if (!oCtx) return;
 
             const sPath = oCtx.getPath();
@@ -595,15 +598,12 @@ sap.ui.define([
 
             if (!sProp) return;
 
-            const currValue = oInput.getValue();
+            const sValue = oInput.getValue().trim();
+            const fValue = sValue === "" ? 0 : parseFloat(sValue);
+            const sFormatted = (isNaN(fValue) ? 0 : fValue).toFixed(3);
 
-            if (currValue.trim() === "") {
-                oInput.setValue(parseInt(0, 10).toFixed(3));
-                return;
-            }
-
-            const parseValue = parseFloat(currValue);
-            oModel.setProperty(sPath + "/" + sProp, parseValue.toFixed(3));
+            oInput.setValue(sFormatted);
+            oModel.setProperty(sPath + "/" + sProp, sFormatted);
         },
 
         onCostCenterChange: function (oEvent) {
@@ -775,7 +775,9 @@ sap.ui.define([
             const postScrapData = { PostSet: [], ReturnSet: [] };
             const postFreeData = { PostSet: [], ReturnSet: [] };
 
-            aRows.forEach(oRow => {
+            const lines = [];
+
+            aRows.forEach((oRow, rowIndex) => {
                 const src = this._getRowSource(oRow, bIsUiTable);
                 const aCells = oRow.getCells();
                 const getCell = name => aCells.find(cell => cell.sId.includes(name));
@@ -789,8 +791,10 @@ sap.ui.define([
                 const reasonVal = reasonCell.getValue();
                 const costCenterVal = costCenterCell.getValue();
                 const amountToTransfer = scrapVal + freeVal;
+                const lineKey = oRow.getBindingContext()?.getPath() ?? `row-${rowIndex}`;
 
                 const data = {
+                    _lineKey: lineKey,
                     Aufnr: src.ProductionOrder,
                     Sortf: src.ProductionOperation,
                     Charg: src.Charg,
@@ -838,6 +842,13 @@ sap.ui.define([
 
                 if (scrapVal > 0) postScrapData.PostSet.push({ ...data });
                 if (freeVal > 0) postFreeData.PostSet.push({ ...data });
+
+                lines.push({
+                    lineKey,
+                    component: src.Component,
+                    scrapQty: scrapVal,
+                    freeQty: freeVal
+                });
             });
 
             if (errors.blocked > 0) {
@@ -850,7 +861,7 @@ sap.ui.define([
             }
             if (errors.emptyFields > 0) return false;
 
-            return { postScrapData, postFreeData };
+            return { postScrapData, postFreeData, lines };
         },
 
         postScrapMovement: async function (postScrapData, postFreeData) {
@@ -866,6 +877,8 @@ sap.ui.define([
 
             return new Promise((resolve, reject) => {
                 const tasks = [];
+
+                this._stripLineKeys({ postScrapData, postFreeData });
 
                 if (postScrapData.PostSet.length > 0) {
                     const scrapTask = TransferService.callPostService("/ZfmPostScrapSet", postScrapData).then(data => {
@@ -885,6 +898,7 @@ sap.ui.define([
                         postFreeData.PostSet[0].Huident = data.PostSet.results[0].Huident;
                     }).catch(oError => {
                         MessageBox.error(oError?.response?.statusText || oResourceBundle.getText("errorMsg"));
+                        throw oError;
                     });
 
                     tasks.push(freeTask);
@@ -895,6 +909,12 @@ sap.ui.define([
                     .catch(err => reject(err))
                 // .finally(() => busyDialog4.close());
             });
+        },
+
+        _stripLineKeys: function ({postScrapData, postFreeData}) {
+            [postScrapData, postFreeData].forEach(post =>
+                (post?.PostSet || []).forEach(m => delete m._lineKey)
+            );
         },
 
         // Hook: cada vista define cómo refrescar sus datos después de
@@ -924,11 +944,14 @@ sap.ui.define([
             });
 
             const response = await MatchcodesService.callGetService("/GetDetailFromUM", [oFinalFilter]);
-            return response.results;
+            const ucDetails = response.results;
+
+            const uniqueUcs = Array.from(new Map(ucDetails.map(o => [o.HandlingUnit, o])).values());
+            return { results: uniqueUcs };
         },
 
         decorateUc: function (aUc, aParentRows) {
-            aUc.forEach(uc => {
+            aUc.results.forEach(uc => {
                 uc.ScrapQuantity = uc.BlockedStock;
                 uc.FreeQuantity = "0";
                 uc.Reason = "";
@@ -949,7 +972,7 @@ sap.ui.define([
             try {
                 const aUc = this.decorateUc(await this.getUcDetails(aParentRows), aParentRows);
                 oTable.clearSelection();
-                oModel.setProperty("/selectedData", aUc);
+                oModel.setProperty("/selectedData", aUc.results);
             } catch (oError) {
                 console.error(oError);
                 // MessageBox.error(this.getOwnerComponent().getModel("i18n").getResourceBundle().getText("reloadError"));
@@ -992,8 +1015,8 @@ sap.ui.define([
 
         _attachSerials: function (transferData, { scrapSerials = {}, freeSerials = {} } = {}) {
             const attach = (postData, serialsByLine) => {
-                (postData?.PostSet || []).forEach((movement, index) => {
-                    const serials = serialsByLine[this._getMovementKey(movement, index)];
+                (postData?.PostSet || []).forEach(movement => {
+                    const serials = serialsByLine[movement._lineKey];
                     if (serials?.length) {
                         movement.ZSerialNumberSet = serials.map(sn => ({ Serialnumber: String(sn) }));
                     }
@@ -1007,6 +1030,9 @@ sap.ui.define([
             return [index, itemNumber, lgort].map(v => String(v ?? "").trim()).join("|");
         },
 
+        _newLineKey: function () {
+            return uid();
+        },
 
         _getMovementKey: function (m, index) {
             return this._buildLineKey(index, m.ItemNumber, m.Lgort);

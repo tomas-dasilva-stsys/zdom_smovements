@@ -46,18 +46,18 @@ sap.ui.define([
         },
 
         _onRouteMatched: async function (oEvent) {
-            const tableData = this.getOwnerComponent().getModel("ucDetailModel").getData().selectedData;
-            const currSerialNumbers = tableData.map(row => row.Serid).filter(serid => serid && serid.trim() !== "");
+            // const tableData = this.getOwnerComponent().getModel("ucDetailModel").getData().selectedData;
+            // const currSerialNumbers = tableData.map(row => row.Serid).filter(serid => serid && serid.trim() !== "");
 
-            let serNumbersData = {}
+            // let serNumbersData = {}
 
-            currSerialNumbers.forEach((serid, index) => {
-                serNumbersData[index] = { key: index, serialNumber: serid };
-            });
+            // currSerialNumbers.forEach((serid, index) => {
+            //     serNumbersData[index] = { key: index, serialNumber: serid };
+            // });
 
-            const serNumbersModel = new JSONModel({ serialNumbers: Object.values(serNumbersData) });
+            // const serNumbersModel = new JSONModel({ serialNumbers: Object.values(serNumbersData) });
 
-            this.getOwnerComponent().setModel(serNumbersModel, "serNumbersModel");
+            // this.getOwnerComponent().setModel(serNumbersModel, "serNumbersModel");
         },
 
         _onGlobalKeyDown: function (oEvent) {
@@ -169,35 +169,19 @@ sap.ui.define([
         },
 
         checkForSerialNumbers: async function () {
-            const scrapErr = this.checkTransferMovement();
-            if (!scrapErr) return;
+            const transferData = this.checkTransferMovement();
+            if (!transferData) return;
 
             const oTable = this.byId("table");
             const aSelectedRows = this._getSelectedData(oTable);
-            const aLines = aSelectedRows.filter(row =>
-                row.Serid && row.Serid.trim() !== "" &&
-                Number(row.BlockedStock) != Number(row.ScrapQuantity) &&
-                Number(row.BlockedStock) != Number(row.FreeQuantity)
-            ).map((row, index) => ({
-                lineKey: this._buildLineKey(index, row.ItemNumber, row.Lgort),
-                component: row.parent.Component,
-                scrapQty: Number(row.ScrapQuantity || 0),
-                freeQty: Number(row.FreeQuantity || 0)
-            }));
+            const aLines = transferData.lines;
+            const hasSerials = this.getOwnerComponent().getModel("serNumbersModel").getProperty("/serialNumbers");
 
             const partialMove = aSelectedRows.some(row => {
                 return Number(row.BlockedStock) != Number(row.ScrapQuantity) && Number(row.BlockedStock) != Number(row.FreeQuantity);
             });
 
-            // if (hasSerialNumbers && partialMove) {
-            //     const iScrap = aSelectedRows.reduce((sum, r) => sum + Number(r.ScrapQuantity || 0), 0);
-            //     const iFree = aSelectedRows.reduce((sum, r) => sum + Number(r.FreeQuantity || 0), 0);
-            //     this._openSerialNumbersDialog(iScrap, iFree);
-            // } else {
-            //     this.openPrintLabels({});
-            // }
-
-            if (aLines.length && partialMove) {
+            if (aLines.length && partialMove && hasSerials.length > 0) {
                 this._openSerialNumbersDialog(aLines);
             } else {
                 this.openPrintLabels({});
@@ -245,7 +229,7 @@ sap.ui.define([
                 .filter(item => item !== oCurrentItem && item.serialNumber)
                 .map(item => item.serialNumber);
 
-            const aAvailable = oModel.getProperty("/allSerials").filter(s => !aTaken.includes(s.serialNumber));
+            const aAvailable = oModel.getProperty("/allSerials").filter(s => !aTaken.includes(s)).map(s => ({ serialNumber: s }));;
 
             oModel.setProperty("/available", aAvailable);
 

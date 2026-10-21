@@ -9,7 +9,7 @@
     busyIndicatorDelay="0"
 >
     <Page
-        title="UC Detail"
+        title="{i18n>ucDetail}"
         showNavButton="true"
         navButtonPress="onNavBack"
     >
@@ -234,6 +234,7 @@
                     filterProperty="Serid"
                     showSortMenuEntries="true"
                     showFilterMenuEntries="true"
+                    visible="false"
                 >
                     <t:label>
                         <Label text="{i18n>serId}" />

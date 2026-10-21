@@ -40,6 +40,7 @@ sap.ui.define([
                 document.title = sAppTitle;
 
                 this.setModel(new JSONModel({ selectedData: [], parentRows: [] }), "ucDetailModel");
+                this.setModel(new JSONModel({ serialNumbers: [] }), "serNumbersModel");
 
                 // enable routing
                 this.getRouter().initialize();
