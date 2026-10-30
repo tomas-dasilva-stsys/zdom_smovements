@@ -15,7 +15,7 @@
     "@ui5/cli": "^3.11.13"
   },
   "scripts": {
-    "start": "fiori run --open \"test/flpSandbox.html?sap-client=130&sap-ui-xx-viewCache=false#zdomscrapmovements-display\"",
+    "start": "fiori run \"test/flpSandbox.html?sap-client=130&sap-ui-xx-viewCache=false#zdomscrapmovements-display\"",
     "start-local": "fiori run --config ./ui5-local.yaml --open \"test/flpSandbox.html?sap-client=130&sap-ui-xx-viewCache=false#zdomscrapmovements-display\"",
     "build": "ui5 build --config=ui5.yaml --clean-dest --dest dist",
     "deploy": "fiori verify",

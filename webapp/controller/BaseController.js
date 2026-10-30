@@ -911,7 +911,7 @@ sap.ui.define([
             });
         },
 
-        _stripLineKeys: function ({postScrapData, postFreeData}) {
+        _stripLineKeys: function ({ postScrapData, postFreeData }) {
             [postScrapData, postFreeData].forEach(post =>
                 (post?.PostSet || []).forEach(m => delete m._lineKey)
             );
@@ -984,6 +984,30 @@ sap.ui.define([
         // ==================================================================
         // IMPRESIÓN DE ETIQUETAS
         // ==================================================================
+
+        getUserInfo: async function () {
+            try {
+                const response = await fetch("/sap/bc/ui2/start_up");
+                const data = await response.json();
+
+                return data?.id ? data.id : '';
+                // if (data?.id) {
+                //     // Test example
+                //     // const oData = await MatchcodesService.callGetService('/GetPlant', [new Filter('uname', FilterOperator.EQ, 'IROSS')]);
+
+                //     const oData = await MatchcodesService.callGetService('/GetPlant', [new Filter('uname', FilterOperator.EQ, data.id)]);
+
+                //     if (oData.results.length > 0) {
+                //         const filteredData = oData.results.filter(item => item.Plant !== "' '")
+                //         return filteredData;
+                //     }
+                // }
+
+                return false;
+            } catch (e) {
+                console.warn("start_up falló:", e);
+            }
+        },
 
         openPrintLabels: async function (serialNumbers = {}) {
             const transferData = this.checkTransferMovement();

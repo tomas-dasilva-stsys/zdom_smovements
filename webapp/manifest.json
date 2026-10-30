@@ -113,6 +113,11 @@
           "pattern": "ucDetail",
           "name": "ucDetail",
           "target": "ucDetail"
+        },
+        {
+          "pattern": "movementReview",
+          "name": "movementReview",
+          "target": "movementReview"
         }
       ],
       "targets": {
@@ -124,6 +129,11 @@
         "ucDetail": {
           "viewName": "UcDetail",
           "viewId": "UcDetail",
+          "viewLevel": 2
+        },
+        "movementReview": {
+          "viewName": "MovementReview",
+          "viewId": "MovementReview",
           "viewLevel": 2
         }
       }
